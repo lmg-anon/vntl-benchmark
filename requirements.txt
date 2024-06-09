@@ -1,0 +1,9 @@
+colorama
+requests
+sentencepiece
+tqdm
+pybars3
+pyyaml
+sseclient-py
+typing_extensions
+sentence_transformers

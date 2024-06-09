@@ -1,0 +1,692 @@
+[Mashiroiro]
+Name: Uryuu Shingo (瓜生 新吾)
+Gender: Male
+Aliases: Onii-chan (お兄ちゃん)
+
+Name: Uryuu Sakuno (瓜生 桜乃)
+Gender: Female
+Aliases: None
+
+[Neko Para Vol.1]
+Name: Minaduki Kashou (水無月 嘉祥)
+Gender: Male
+Aliases: Master (ご主人さま)
+
+Name: Chocola (ショコラ)
+Gender: Female
+Aliases: None
+
+Name: Vanilla (バニラ)
+Gender: Female
+Aliases: None
+
+Name: Azuki (アズキ)
+Gender: Female
+Aliases: None
+
+Name: Cinnamon (シナモン)
+Gender: Female
+Aliases: None
+
+Name: Coconut (ココナツ)
+Gender: Female
+Aliases: None
+
+Name: Maple (メイプル)
+Gender: Female
+Aliases: None
+
+Name: Minaduki Shigure (水無月 時雨)
+Gender: Female
+Aliases: None
+
+Name: Milk (ミルク)
+Gender: Female
+Aliases: None
+
+[Neko Para Vol.4]
+Name: Minaduki Kashou (水無月 嘉祥)
+Gender: Male
+Aliases: Master (ご主人さま)
+
+Name: Azuki (アズキ)
+Gender: Female
+Aliases: None
+
+Name: Chocola (ショコラ)
+Gender: Female
+Aliases: None
+
+Name: Cinnamon (シナモン)
+Gender: Female
+Aliases: None
+
+Name: Coconut (ココナツ)
+Gender: Female
+Aliases: None
+
+Name: Maple (メイプル)
+Gender: Female
+Aliases: None
+
+Name: Minaduki Shigure (水無月 時雨)
+Gender: Female
+Aliases: None
+
+Name: Vanilla (バニラ)
+Gender: Female
+Aliases: None
+
+Name: Beignet (ベニエ)
+Gender: Male
+Aliases: Mentor (師匠)
+
+Name: Fraise (フレーズ)
+Gender: Female
+Aliases: None
+
+Name: Milk (ミルク)
+Gender: Female
+Aliases: None
+
+Name: Minaduki Awayuki (水無月 淡雪)
+Gender: Female
+Aliases: None
+
+Name: Minaduki Suhama (水無月 州浜)
+Gender: Male
+Aliases: None
+
+[Senren Banka]
+Name: Arichi Masaomi (有地 将臣)
+Gender: Male
+Aliases: Ma-bou (まー坊)
+
+Name: Hitachi Mako (常陸 茉子)
+Gender: Female
+Aliases: None
+
+Name: Lena Liechtenauer (レナ・リヒテナウアー)
+Gender: Female
+Aliases: None
+
+Name: Murasame (ムラサメ)
+Gender: Female
+Aliases: Aya (アヤ)
+
+Name: Tomotake Yoshino (朝武 芳乃)
+Gender: Female
+Aliases: None
+
+Name: Chuujou Hinami (中条 比奈実)
+Gender: Female
+Aliases: None
+
+Name: Inotani Motoko (猪谷 心子)
+Gender: Female
+Aliases: None
+
+Name: Komagawa Mizuha (駒川 みづは)
+Gender: Female
+Aliases: None
+
+Name: Kurama Genjuurou (鞍馬 玄十郎)
+Gender: Male
+Aliases: None
+
+Name: Kurama Koharu (鞍馬 小春)
+Gender: Female
+Aliases: None
+
+Name: Kurama Rentarou (鞍馬 廉太郎)
+Gender: Male
+Aliases: None
+
+Name: Maniwa Roka (馬庭 芦花)
+Gender: Female
+Aliases: Roka-nee (芦花姉)
+
+Name: Tomotake Akiho (朝武 秋穂)
+Gender: Female
+Aliases: None
+
+Name: Tomotake Yasuharu (朝武 安晴)
+Gender: Male
+Aliases: None
+
+[Aokana]
+Name: Hinata Masaya (日向 晶也)
+Gender: Male
+Aliases: None
+
+Name: Arisaka Mashiro (有坂 真白)
+Gender: Female
+Aliases: Mashirocchi (真白っち)
+
+Name: Ichinose Rika (市ノ瀬 莉佳)
+Gender: Female
+Aliases: None
+
+Name: Kurashina Asuka (倉科 明日香)
+Gender: Female
+Aliases: None
+
+Name: Tobisawa Misaki (鳶沢 みさき)
+Gender: Female
+Aliases: None
+
+Name: Aoyagi Madoka (青柳 窓果)
+Gender: Female
+Aliases: None
+
+Name: Aoyagi Shion (青柳 紫苑)
+Gender: Male
+Aliases: Prez (部長)
+
+Name: Arisaka Botan (有坂 牡丹)
+Gender: Female
+Aliases: None
+
+Name: Masked Skywalker (覆面選手)
+Gender: Unknown
+Aliases: None
+
+Name: Ganeko Mayu (我如古 繭)
+Gender: Female
+Aliases: None
+
+Name: Hosaka Minori (保坂 実里)
+Gender: Female
+Aliases: None
+
+Name: Inui Saki (乾 沙希)
+Gender: Female
+Aliases: None
+
+Name: Irina Avalon (イリーナ・アヴァロン)
+Gender: Female
+Aliases: None
+
+Name: Kagami Aoi (各務 葵)
+Gender: Female
+Aliases: None
+
+Name: Kurobuchi Kasumi (黒渕 霞)
+Gender: Female
+Aliases: None
+
+Name: Okoze Arika (虎魚 有梨華)
+Gender: Female
+Aliases: Tanny (マグロ)
+
+Name: Satouin Reiko (佐藤院 麗子)
+Gender: Female
+Aliases: Satou (佐藤)
+
+Name: Shindou Kazunari (真藤 一成)
+Gender: Male
+Aliases: None
+
+Name: Shirase Hayato (白瀬 隼人)
+Gender: Male
+Aliases: None
+
+Name: Shirase Minamo (白瀬 みなも)
+Gender: Female
+Aliases: None
+
+[Kinkoi]
+Name: Ichimatsu Ouro (市松 央路)
+Gender: Male
+Aliases: Ichi (イチ), Plebeian (下郎)
+
+Name: Elle (エル)
+Gender: Female
+Aliases: Elle-chin (エルちん), Heroina di Caballero istaa (エロイナ・ディ・カバリェロ・イスタ)
+
+Name: Kisaki Reina (妃 玲奈)
+Gender: Female
+Aliases: None
+
+Name: Kuryuu Akane (栗生 茜)
+Gender: Female
+Aliases: Akane-chin (茜ちん)
+
+Name: Souma Ria (僧間 理亜)
+Gender: Female
+Aliases: None
+
+Name: Sylvia le Cruzcrown Sortilège Sisua (シルヴィア・ル・クルスクラウン・ソルティレージュ・シスア)
+Gender: Female
+Aliases: Sylvie (シルヴィ), Syl (シル)
+
+Name: Boralcoche (ボラルコーチェ)
+Gender: Male
+Aliases: None
+
+Name: Mina (ミナ)
+Gender: Female
+Aliases: Cami-meow (カミにゃん), Caminal le Pultaia Sortilège Sisua (カミナル・ル・プルテア・ソルティレージュ・シスア)
+
+Name: Exna Yeatz (エキスナ・イェーズ)
+Gender: Female
+Aliases: None
+
+Name: Iroe di Cabellero istaa (イロエ・ディ・カバリェロ・イスタ)
+Gender: Male
+Aliases: None
+
+Name: Jogasaki Ayaka (城ヶ崎 絢華)
+Gender: Female
+Aliases: A-chan (あーちゃん), Ayakacchi (絢華っち)
+
+Name: Kaga Manako (加賀 愛子)
+Gender: Female
+Aliases: Mego (めご)
+
+Name: Kyuro-chan (キュロちゃん)
+Gender: Unknown
+Aliases: None
+
+Name: Maria Bishop (マリア・ビショップ)
+Gender: Female
+Aliases: None
+
+Name: Rokuonji Kikuchiyo (鹿苑寺 菊千代)
+Gender: Male
+Aliases: Kiku-chon (菊ちょん)
+
+Name: Ichimatsu Chieka (市松 千恵華)
+Gender: Female
+Aliases: Chi (チ), Chekka (チェッカ)
+
+Name: Shima Toryo (縞 投良)
+Gender: Male
+Aliases: None
+
+[Ouchi ni Kaeru]
+Name: Miyahara Ryo (宮原 亮)
+Gender: Male
+Aliases: Asuma (あすま), Asuma (遊馬)
+
+Name: Asaka Ushio (朝霞 汐)
+Gender: Female
+Aliases: None
+
+Name: Kasukabe Kanon (春日部 花音)
+Gender: Female
+Aliases: None
+
+Name: Misuzu Sasa (皇鈴 紗々)
+Gender: Female
+Aliases: None
+
+Name: Raiha Raikkonen (礼羽 ライコネン)
+Gender: Female
+Aliases: RaiRai (ライライ)
+
+Name: JC (ＪＣ)
+Gender: Female
+Aliases: None
+
+Name: Kawagoe Shizuka (川越 しずか)
+Gender: Female
+Aliases: None
+
+Name: Kawagoe Taichi (川越 太一)
+Gender: Male
+Aliases: None
+
+Name: Sayama Kanzaburo (狭山 寛三郎)
+Gender: Male
+Aliases: None
+
+Name: Tokorozawa Marin (所沢 まりん)
+Gender: Female
+Aliases: None
+
+Name: Tsukiyono Usagi (月夜野 兎姫)
+Gender: Female
+Aliases: None
+
+[Primal Hearts]
+Name: Tatewaki Kazuma (帯刀 和馬)
+Gender: Male
+Aliases: Belt (ベルト), Wakki (わっきー), Triple Seven (スリーセブン), Kazu-chan (かづちゃん), Master Tatewaki (帯刀氏)
+
+Name: Kanna Kana (神流 歌奈)
+Gender: Female
+Aliases: Kanakana (カナカナ)
+
+Name: Komagata Yuzuki (駒形 ゆづき)
+Gender: Female
+Aliases: Yuzu-baby (ゆづきっち)
+
+Name: Kuragano Sera (倉賀野 聖良)
+Gender: Female
+Aliases: Gano-baby (賀野ちゃん)
+
+Name: Tenjindaira Haruhi (天神平 陽姫)
+Gender: Female
+Aliases: Princess (姫)
+
+Name: Gomyou Takaaki (五明 孝明)
+Gender: Male
+Aliases: None
+
+Name: Kozuka Michi (幸塚 美智)
+Gender: Female
+Aliases: Bitch (ビッチ)
+
+Name: Mizanori Norihiro (御座入 紀洋)
+Gender: Male
+Aliases: Nori (ノリ)
+
+Name: Motoyurugido Mei (本動堂 萌衣)
+Gender: Female
+Aliases: None
+
+Name: Akiyoshi Nekokon (秋吉 ねここん)
+Gender: Female
+Aliases: None
+
+Name: Morikawa Mihono (森川 美穂乃)
+Gender: Female
+Aliases: None
+
+[Primal Hearts 2]
+Name: Kozuka Daichi (幸塚 大智)
+Gender: Male
+Aliases: Triple Seven (スリーセブン)
+
+Name: Alicetia Wallenberg Kezouji (アリスティア・ヴァレンベリ・華蔵寺)
+Gender: Female
+Aliases: Fluffy (もこもこ)
+
+Name: Kuryuu Mashiro (栗生 真白)
+Gender: Female
+Aliases: Mashiron (ましろん), Mashironi (ましろんに)
+
+Name: Tatebayashi Tateha (館林 たては)
+Gender: Female
+Aliases: Tatehunny (たてちー)
+
+Name: Tsukiyono Usagi (月夜野 兎姫)
+Gender: Female
+Aliases: None
+
+Name: Kirizumi Kirika (霧積 桐香)
+Gender: Female
+Aliases: None
+
+Name: Kozuka Michi (幸塚 美智)
+Gender: Female
+Aliases: Bitch (ビッチ)
+
+Name: Motoyurugido Mei (本動堂 萌衣)
+Gender: Female
+Aliases: None
+
+Name: Shikishima Hidehiko (敷島 秀彦)
+Gender: Male
+Aliases: Hidechi (ひでち)
+
+Name: Usagi’s Mom (兎姫ママ)
+Gender: Female
+Aliases: Mama-san (ママさん)
+
+Name: Watanuki Anna (綿貫 杏那)
+Gender: Female
+Aliases: None
+
+Name: Yattajima Kiyoshi (八斗島 清司)
+Gender: Male
+Aliases: None
+
+Name: Kanna Kana (神流 歌奈)
+Gender: Female
+Aliases: Kanakana (カナカナ)
+
+Name: Komagata Yuzuki (駒形 ゆづき)
+Gender: Female
+Aliases: Yuzu-baby (ゆづきっち)
+
+Name: Kuragano Sera (倉賀野 聖良)
+Gender: Female
+Aliases: Gano-baby (賀野ちゃん)
+
+Name: Mizanori Norihiro (御座入 紀洋)
+Gender: Male
+Aliases: Nori (ノリ)
+
+Name: Tatewaki Kazuma (帯刀 和馬)
+Gender: Male
+Aliases: Belt (ベルト), Wakki (わっきー), Triple Seven (スリーセブン), Kazu-chan (かづちゃん), Master Tatewaki (帯刀氏)
+
+Name: Tenjindaira Haruhi (天神平 陽姫)
+Gender: Female
+Aliases: Princess (姫)
+
+[Rewrite]
+Name: Tennouji Kotarou (天王寺 瑚太朗)
+Gender: Male
+Aliases: None
+
+Name: Kagari (篝)
+Gender: Female
+Aliases: Key (鍵)
+
+Name: Kanbe Kotori (神戸 小鳥)
+Gender: Female
+Aliases: None
+
+Name: Konohana Lucia (此花 ルチア)
+Gender: Female
+Aliases: Class Rep (委員長)
+
+Name: Nakatsu Shizuru (中津 静流)
+Gender: Female
+Aliases: Shizu (しず)
+
+Name: Ohtori Chihaya (鳳 ちはや)
+Gender: Female
+Aliases: Chi (ちー)
+
+Name: Ohtori (鳳)
+Gender: Female
+Aliases: Ohtori Chihaya (鳳 ちはや), Chi (ちー)
+
+Name: Senri Akane (千里 朱音)
+Gender: Female
+Aliases: Prez (会長), The Witch of the School (学園の魔女)
+
+Name: Witch (魔女)
+Gender: Female
+Aliases: Senri Akane (千里 朱音), Prez (会長), The Witch of the School (学園の魔女)
+
+Name: Chibimoth (ちびもす)
+Gender: Unknown
+Aliases: None
+
+Name: Sougen Esaka (宗源 江坂)
+Gender: Male
+Aliases: None
+
+Name: Gen-san (ゲンさん)
+Gender: Male
+Aliases: None
+
+Name: Gil (ぎる)
+Gender: Male
+Aliases: None
+
+Name: Arata Imamiya (新 今宮)
+Gender: Male
+Aliases: None
+
+Name: Akira Inoue (晶 井上)
+Gender: Female
+Aliases: None
+
+Name: Jasmine (ヤスミン)
+Gender: Female
+Aliases: None
+
+Name: Kashima Sakura (加島 桜)
+Gender: Female
+Aliases: None
+
+Name: Midou (ミドウ)
+Gender: Male
+Aliases: None
+
+Name: Touka Nishikujou (灯花 西九条)
+Gender: Female
+Aliases: None
+
+Name: Ohtori Sakuya (鳳 咲夜)
+Gender: Male
+Aliases: None
+
+Name: Pani (ぱに)
+Gender: Female
+Aliases: None
+
+Name: Shimako (しまこ)
+Gender: Female
+Aliases: None
+
+Name: Haruhiko Yoshino (晴彦 吉野)
+Gender: Male
+Aliases: None
+
+[Sharin no Kuni]
+Name: Morita Kenichi (森田 賢一)
+Gender: Male
+Aliases: Higuchi Ken (樋口 ケン)
+
+Name: Higuchi Ririko (樋口 璃々子)
+Gender: Female
+Aliases: None
+
+Name: Hinata Natsumi (日向 夏咲)
+Gender: Female
+Aliases: None
+
+Name: Houzuki Masaomi (法月 将臣)
+Gender: Male
+Aliases: None
+
+Name: Mitsuhiro Sachi (三ツ廣 さち)
+Gender: Female
+Aliases: None
+
+Name: Oone Touka (大音 灯花)
+Gender: Female
+Aliases: None
+
+Name: Mana (まな)
+Gender: Female
+Aliases: None
+
+Name: Oone Kyouko (大音 京子)
+Gender: Female
+Aliases: None
+
+Name: Uzuki Sepia (卯月 セピア)
+Gender: Male
+Aliases: None
+
+Name: Isono Ichirouta (磯野 一朗太)
+Gender: Male
+Aliases: None
+
+Name: Anteriam Du Muanu (アンテリアム・ド・ムァヌー)
+Gender: Female
+Aliases: Mana (まな)
+
+Name: Higuchi Saburou (樋口 三郎)
+Gender: Male
+Aliases: None
+
+Name: Nagumo Eri (南雲 えり)
+Gender: Female
+Aliases: None
+
+[Study Steady]
+Name: %name (%name)
+Gender: Male
+Aliases: %nick (%nick), %fp (%fp)
+
+Name: Kakegawa Hazuki (掛川 葉月)
+Gender: Female
+Aliases: None
+
+Name: Kinomiya Nanoka (来宮 なのか)
+Gender: Female
+Aliases: Nanorin (なのりん)
+
+Name: Maisaka Mai (舞阪 茉衣)
+Gender: Female
+Aliases: None
+
+Name: Omaezaki Yuu (御前崎 悠羽)
+Gender: Female
+Aliases: None
+
+Name: Coogle (クーグル)
+Gender: Female
+Aliases: None
+
+[IGNORE//The Devion on G String//IGNORE]
+Name: Azai Kyousuke (浅井 京介)
+Gender: Male
+Aliases: Kyousuke-chan (京介ちゃん)
+
+Name: Aizawa Eiichi (相沢 栄一)
+Gender: Male
+Aliases: Etekichi, Ei-chan
+
+Name: Azai Kanon (浅井 花音)
+Gender: Female
+Aliases: Non-chan
+
+Name: Maou (魔王)
+Gender: Male
+Aliases: The Devil
+
+Name: Miwa Tsubaki (美輪 椿姫)
+Gender: Female
+Aliases: Bakkii
+
+Name: Shiratori Mizuha (白鳥 水羽)
+Gender: Female
+Aliases: None
+
+Name: Usami Haru (宇佐美 ハル)
+Gender: Female
+Aliases: Hero, Oharu-chan, Usamin
+
+Name: Azai Gonzou (浅井 権三)
+Gender: Male
+Aliases: Paparin, The Monster, The Beast
+
+Name: Kanesaki Ikuko (金崎 郁子)
+Gender: Female
+Aliases: Coach
+
+Name: Miwa Hiroaki (美輪 広明)
+Gender: Male
+Aliases: None
+
+Name: Saijou Noriyuki (西条 則之)
+Gender: Male
+Aliases: Mephistopheles
+
+Name: Tokita Yuki (時田 ユキ)
+Gender: Female
+Aliases: None
+
+Name: Samejima Toshikatsu (鮫島 利勝)
+Gender: Male
+Aliases: None
