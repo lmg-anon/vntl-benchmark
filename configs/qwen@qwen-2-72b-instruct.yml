@@ -1,0 +1,4 @@
+backend:
+  type: "openrouter"
+  model: "qwen/qwen-2-72b-instruct"
+  chat_endpoint: false # The model behaves strangely with the chat endpoint...

@@ -1,0 +1,4 @@
+backend:
+  type: "openrouter"
+  model: "deepseek/deepseek-chat"
+  chat_endpoint: true

@@ -1,8 +1,13 @@
+from typing import Iterator
 from typing_extensions import override
 from modules.model import LanguageModel
 from modules.log import Logger
-from llama_cpp import Llama
 from colorama import Fore
+
+import importlib
+if importlib.util.find_spec("llama_cpp") is None:
+    raise ModuleNotFoundError()
+
 
 __all__ = ("LpyModel",)
 
@@ -16,18 +21,15 @@ class LpyModel(LanguageModel):
             else:
                 Logger.log_event("Error", Fore.RED, "Specify the auxiliary model path using the argument --auxiliary-model.")
             exit(-1)
-        self.new_seed()
+        from llama_cpp import Llama
         self.llm = Llama(model_path=model_path, n_ctx=max_context, seed=self.seed, verbose=False)  # type: ignore
         super().__init__(max_context, auxiliary)
 
     def __del__(self):
         del self.llm
 
-    def wait(self):
-        pass
-
     @override
-    def _generate_once(self, data: dict) -> str:
+    def _generate_token(self, data: dict) -> Iterator[str]:
         output = self.llm(
             data["prompt"],
             max_tokens=data["max_length"],
@@ -45,5 +47,9 @@ class LpyModel(LanguageModel):
         return output["choices"][0]["text"]  # type: ignore
     
     @override
-    def generate_batch(self, prompts: list[str], batch_size: int = 1, max_tokens: int = 8) -> list[str]:
+    def _generate_token_chat(self, data: dict) -> Iterator[str]:
+        raise NotImplementedError()
+    
+    @override
+    def generate_batch(self, prompts: list[str], max_tokens: int = 8) -> list[str]:
         raise NotImplementedError()

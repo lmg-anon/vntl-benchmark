@@ -25,6 +25,7 @@ class KcppModel(LanguageModel):
             self.kcpp_host = f"http://{self.kcpp_host}"
         super().__init__(max_context, auxiliary)
 
+    @override
     def wait(self):
         wait_started = False
         while True:
@@ -39,6 +40,7 @@ class KcppModel(LanguageModel):
                 time.sleep(1)
                 continue
 
+    @override
     def _abort(self):
         try:
             requests.post(f"{self.kcpp_host}/api/extra/abort")
@@ -48,7 +50,7 @@ class KcppModel(LanguageModel):
             exit(-1)
 
     @override
-    def _generate_once(self, data: dict) -> Iterator[str]:
+    def _generate_token(self, data: dict) -> Iterator[str]:
         self._abort()
 
         for _ in range(5):
@@ -80,5 +82,9 @@ class KcppModel(LanguageModel):
                 continue
     
     @override
-    def generate_batch(self, prompts: list[str], batch_size: int = 1, max_tokens: int = 8) -> list[str]:
+    def _generate_token_chat(self, data: dict) -> Iterator[str]:
+        raise NotImplementedError()
+    
+    @override
+    def generate_batch(self, prompts: list[str], max_tokens: int = 8) -> list[str]:
         raise NotImplementedError()

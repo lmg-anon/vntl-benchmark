@@ -1,0 +1,13 @@
+downloader:
+  repo: "bartowski/openchat-3.6-8b-20240522-GGUF"
+  filters: "q8_0"
+  output: ".\\gguf"
+  #delete_after: true
+
+backend:
+  type: "local_openai"
+  chat_endpoint: False
+
+run:
+  path: ".\\koboldcpp (6).exe"
+  arguments: "--model \".\\gguf\\openchat-3.6-8b-20240522-Q8_0.gguf\" --threads 5 --blasthreads 5 --contextsize 2048 --usecublas normal 0 --gpulayers 999 --highpriority --flashattention --nommap --multiuser 1"

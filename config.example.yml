@@ -1,0 +1,60 @@
+# Number of allowed concurrent model downloads
+concurrent_downloads: 2
+
+# Number of allowed cached model downloads
+model_cache_size: 2
+
+# Extra arguments for the main script
+extra_args: "--verbose"
+
+# base_downloader:
+#   # Replace with your actual HuggingFace token
+#   token: "hf_<YOUR_TOKEN>"
+
+base_model:
+  # Model seed
+  seed: 3407
+  # List of stop sequences
+  stop: ["\n"]
+  # End of sequence token
+  eos_token: "</s>"
+
+custom_backends:
+  openai:
+    type: "openai"
+    # OpenAI API host URL
+    host: "https://api.openai.com"
+    # Replace <YOUR_API_KEY> with your actual OpenAI API key
+    api_key: "sk-proj-<YOUR_API_KEY>"
+
+  local_openai:
+    type: "openai"
+    # Local OpenAI API host URL
+    host: "http://127.0.0.1:5001"
+    # No API key required for local instance
+    # api_key: ""
+
+  openrouter:
+    type: "openai"
+    # OpenRouter API host URL
+    host: "https://openrouter.ai/api"
+    # Replace <YOUR_API_KEY> with your actual OpenRouter API key
+    api_key: "sk-or-v1-<YOUR_API_KEY>"
+    extra_api_params:
+      provider:
+        # Allow fallbacks: true or false
+        allow_fallbacks: false
+
+  openrouter_together:
+    type: "openai"
+    # OpenRouter (Together-specific) API host URL
+    host: "https://openrouter.ai/api"
+    # Replace <YOUR_API_KEY> with your actual OpenRouter Together API key
+    api_key: "sk-or-v1-<YOUR_API_KEY>"
+    extra_api_params:
+      provider:
+        # Allow fallbacks: true or false
+        allow_fallbacks: false
+        # Order of providers
+        order:
+          - Together

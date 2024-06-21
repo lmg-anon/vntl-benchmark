@@ -7,13 +7,12 @@ import requests
 import json
 import time
 import sseclient
-import math
 
 __all__ = ("OaiModel",)
 
 
 class OaiModel(LanguageModel):
-    def __init__(self, oai_host: str, api_key: str, max_context: int, auxiliary: bool = False):
+    def __init__(self, oai_host: str, api_key: str, model: str, max_context: int, extra_api_params: dict = {}, auxiliary: bool = False):
         assert(isinstance(oai_host, str))
         if not oai_host:
             if not auxiliary:
@@ -22,11 +21,14 @@ class OaiModel(LanguageModel):
                 Logger.log_event("Error", Fore.RED, "Specify the auxiliary model backend host using the argument --auxiliary-host.")
             exit(-1)
         self.oai_host = oai_host.strip('/')
-        self.api_key = api_key
         if not self.oai_host.startswith("http"):
             self.oai_host = f"http://{self.oai_host}"
+        self.api_key = api_key
+        self.model = model
+        self.extra_api_params = extra_api_params
         super().__init__(max_context, auxiliary)
 
+    @override
     def wait(self):
         wait_started = False
         while True:
@@ -41,25 +43,38 @@ class OaiModel(LanguageModel):
                 time.sleep(1)
                 continue
 
-    def _abort(self):
-        pass
-
-    def _convert_data(self, data: dict, stream: bool = False) -> dict:
+    def _convert_data(self, data: dict) -> dict:
         def rename_dict_key(lhs: str, rhs: str):
             if lhs in data:
                 data[rhs] = data[lhs]
                 del data[lhs]
+        def remove_dict_key(key: str):
+            if key in data:
+                del data[key]
         rename_dict_key("max_tokens", "max_tokens")
         rename_dict_key("max_length", "max_tokens")
-        rename_dict_key("rep_pen", "repeat_penalty")
-        rename_dict_key("rep_pen_range", "repeat_last_n")
+        if "api.openai.com" in self.oai_host:
+            remove_dict_key("rep_pen")
+            remove_dict_key("rep_pen_range")
+            remove_dict_key("max_context_length")
+        else:
+            rename_dict_key("rep_pen", "repetition_penalty")
+            rename_dict_key("rep_pen_range", "repetition_penalty_range")
         rename_dict_key("sampler_seed", "seed")
         rename_dict_key("stop_sequence", "stop")
+        if self.model and "claude" in self.model and "stop" in data:
+            data["stop"] = [stop for stop in data["stop"] if stop.strip()]
         return data
 
     @override
-    def _generate_once(self, data: dict) -> Iterator[str]:
+    def _generate_token(self, data: dict) -> Iterator[str]:
         data = self._convert_data(data)
+        if self.model:
+            data.update({
+                "model": self.model
+            })
+        if self.extra_api_params:
+            data.update(self.extra_api_params)
         self._abort()
 
         for _ in range(5):
@@ -72,12 +87,12 @@ class OaiModel(LanguageModel):
                 exit(-1)
 
             if response.status_code == 503: # Server busy.
-                Logger.log(f"{self.get_identifier()} is busy, trying again in ten seconds...", True)
-                time.sleep(10)
+                Logger.log(f"{self.get_identifier()} is busy, trying again in 3 seconds...", True)
+                time.sleep(3)
                 continue
 
             if response.status_code != 200:
-                Logger.log_event("Error", Fore.RED, f"{self.get_identifier()} returned an error. HTTP status code: {response.status_code}")
+                Logger.log_event("Error", Fore.RED, f"{self.get_identifier()} returned an error. HTTP status code: {response.status_code}\n{response.text}")
                 exit(-1)
 
             lastEvent = None
@@ -87,15 +102,74 @@ class OaiModel(LanguageModel):
                         lastEvent = jsonText = event.data
                         if jsonText == "[DONE]":
                             break
-                        data = json.loads(jsonText)
-                        #logprobs = data['choices'][0].get('logprobs', {}).get('top_logprobs', [{}])[0].items() if 'logprobs' in data['choices'][0] else []
+                        jsonData = json.loads(jsonText)
+
+                        finishReason = jsonData['choices'][0]['finish_reason']
+                        if finishReason is not None and finishReason != 'null':
+                            if jsonData['choices'][0]['text']:
+                                yield jsonData['choices'][0]['text']
+                            break
+
+                        #logprobs = jsonData['choices'][0].get('logprobs', {}).get('top_logprobs', [{}])[0].items() if 'logprobs' in jsonData['choices'][0] else []
                         #probs = [{'tok_str': tok, 'prob': math.exp(logprob)} for tok, logprob in logprobs]
-                        yield data['choices'][0]['text']
+                        yield jsonData['choices'][0]['text']
+                        lastEvent = None
+                break
+            except Exception as e:
+                Logger.log_event("Warning", Fore.YELLOW, f"{self.get_identifier()} returned an invalid response. Error while parsing {repr(lastEvent)}: {e}", True)
+                continue
+
+    @override
+    def _generate_token_chat(self, data: dict) -> Iterator[str]:
+        data = self._convert_data(data)
+        if self.model:
+            data.update({
+                "model": self.model
+            })
+        if self.extra_api_params:
+            data.update(self.extra_api_params)
+        self._abort()
+
+        for _ in range(5):
+            try:
+                response = requests.post(f"{self.oai_host}/v1/chat/completions", data=json.dumps(data), stream=True, headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {self.api_key}'})
+                client = sseclient.SSEClient(response)  # type: ignore
+            except Exception as e:
+                Logger.log_event("Error", Fore.RED, f"{self.get_identifier()} is offline.")
+                Logger.log(str(e), True)
+                exit(-1)
+
+            if response.status_code == 503: # Server busy.
+                Logger.log(f"{self.get_identifier()} is busy, trying again in 3 seconds...", True)
+                time.sleep(3)
+                continue
+
+            if response.status_code != 200:
+                Logger.log_event("Error", Fore.RED, f"{self.get_identifier()} returned an error. HTTP status code: {response.status_code}\n{response.text}")
+                exit(-1)
+
+            lastEvent = None
+            try:
+                for event in client.events():
+                    if event.event == "message":
+                        lastEvent = jsonText = event.data
+                        if jsonText == "[DONE]":
+                            break
+                        jsonData = json.loads(jsonText)
+
+                        finishReason = jsonData['choices'][0]['finish_reason']
+                        if finishReason is not None and finishReason != 'null':
+                            break
+
+                        #logprobs = jsonData['choices'][0].get('logprobs', {}).get('top_logprobs', [{}])[0].items() if 'logprobs' in jsonData['choices'][0] else []
+                        #probs = [{'tok_str': tok, 'prob': math.exp(logprob)} for tok, logprob in logprobs]
+                        yield jsonData['choices'][0]['delta']['content']
+                        lastEvent = None
                 break
             except Exception as e:
                 Logger.log_event("Warning", Fore.YELLOW, f"{self.get_identifier()} returned an invalid response. Error while parsing {repr(lastEvent)}: {e}", True)
                 continue
     
     @override
-    def generate_batch(self, prompts: list[str], batch_size: int = 1, max_tokens: int = 8) -> list[str]:
+    def generate_batch(self, prompts: list[str], max_tokens: int = 8) -> list[str]:
         raise NotImplementedError()

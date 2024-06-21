@@ -1,18 +1,12 @@
+from typing import Iterator
 from typing_extensions import override
 from modules.model import LanguageModel
 from modules.log import Logger
 from colorama import Fore
 
-from exllamav2 import(
-    ExLlamaV2,
-    ExLlamaV2Config,
-    ExLlamaV2Cache,
-    ExLlamaV2Tokenizer,
-)
-from exllamav2.generator import (
-    ExLlamaV2BaseGenerator,
-    ExLlamaV2Sampler
-)
+import importlib
+if importlib.util.find_spec("exllamav2") is None:
+    raise ModuleNotFoundError()
 
 __all__ = ("EXL2Model",)
 
@@ -26,7 +20,16 @@ class EXL2Model(LanguageModel):
             else:
                 Logger.log_event("Error", Fore.RED, "Specify the auxiliary model path using the argument --auxiliary-model.")
             exit(-1)
-        self.new_seed()
+
+        from exllamav2 import(
+            ExLlamaV2,
+            ExLlamaV2Config,
+            ExLlamaV2Cache,
+            ExLlamaV2Tokenizer,
+        )
+        from exllamav2.generator import (
+            ExLlamaV2BaseGenerator
+        )
 
         config = ExLlamaV2Config()
         config.model_dir = model_path
@@ -55,11 +58,12 @@ class EXL2Model(LanguageModel):
         del self.tokenizer
         del self.generator
 
-    def wait(self):
-        pass
-
     @override
-    def _generate_once(self, data: dict) -> str:
+    def _generate_token(self, data: dict) -> Iterator[str]:
+        raise NotImplementedError()
+    
+    @override
+    def _generate_token_chat(self, data: dict) -> Iterator[str]:
         raise NotImplementedError()
     
     @override
@@ -67,7 +71,11 @@ class EXL2Model(LanguageModel):
         return True
     
     @override
-    def generate_batch(self, prompts: list[str], batch_size: int = 1, max_tokens: int = 8) -> list[str]:
+    def generate_batch(self, prompts: list[str], max_tokens: int = 8) -> list[str]:
+        from exllamav2.generator import (
+            ExLlamaV2Sampler
+        )
+        
         # Sampling settings
         settings = ExLlamaV2Sampler.Settings()
         settings.temperature = 0.01

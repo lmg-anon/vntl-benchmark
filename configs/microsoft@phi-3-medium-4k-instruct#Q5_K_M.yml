@@ -1,0 +1,13 @@
+downloader:
+  repo: "bartowski/Phi-3-medium-4k-instruct-GGUF"
+  filters: "q5_k_m"
+  output: ".\\gguf"
+  #delete_after: true
+
+backend:
+  type: "local_openai"
+  chat_endpoint: False
+
+run:
+  path: ".\\koboldcpp (6).exe"
+  arguments: "--model \".\\gguf\\Phi-3-medium-4k-instruct-Q5_K_M.gguf\" --threads 5 --blasthreads 5 --contextsize 2048 --usecublas normal 0 --gpulayers 999 --highpriority --flashattention --nommap --multiuser 1"

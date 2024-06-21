@@ -1,3 +1,5 @@
+import json
+
 __all__ = ("TranslationFile", "TranslationEntry",)
 
 
@@ -20,6 +22,42 @@ class TranslationFile:
         self.entries: list[TranslationEntry] = []
 
     def read_file(self):
+        if self.filepath.endswith("txt"):
+            self.read_txt_file()
+        elif self.filepath.endswith("jsonl"):
+            self.read_jsonl_file()
+        else:
+            raise NotImplementedError()    
+
+    def read_jsonl_file(self):
+        with open(self.filepath, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+
+                data = json.loads(line)
+                current_id = data.get('vn')
+                current_japanese = data.get('japanese').replace("\n", "").replace("\r", "")
+                current_english = data.get('english').replace("\n", "").replace("\r", "")
+                accuracy = data.get('accuracy')
+                current_fidelity = self.get_fidelity_label(accuracy)
+                
+                entry = TranslationEntry(current_japanese, current_english, current_fidelity, current_id)
+                self.entries.append(entry)
+
+    @staticmethod
+    def get_fidelity_label(score):
+        if score < 0.3:
+            return "low"
+        elif score < 0.7: #0.65:
+            return "medium"
+        elif score < 0.83:
+            return "high"
+        else:
+            return "absolute"
+
+    def read_txt_file(self):
         with open(self.filepath, 'r', encoding='utf-8') as f:
             lines = f.readlines()
 

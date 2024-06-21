@@ -1,3 +1,4 @@
+from typing import Iterator
 from typing_extensions import override
 from modules.model import LanguageModel
 from modules.log import Logger
@@ -23,6 +24,7 @@ class LcppModel(LanguageModel):
             self.lcpp_host = f"http://{self.lcpp_host}"
         super().__init__(max_context, auxiliary)
 
+    @override
     def wait(self):
         wait_started = False
         while True:
@@ -57,7 +59,7 @@ class LcppModel(LanguageModel):
         return data
 
     @override
-    def _generate_once(self, data: dict) -> str:
+    def _generate_token(self, data: dict) -> Iterator[str]:
         data = self._convert_data(data)
         response_text = str()
 
@@ -93,5 +95,9 @@ class LcppModel(LanguageModel):
         return response_text
     
     @override
-    def generate_batch(self, prompts: list[str], batch_size: int = 1, max_tokens: int = 8) -> list[str]:
+    def _generate_token_chat(self, data: dict) -> Iterator[str]:
+        raise NotImplementedError()
+    
+    @override
+    def generate_batch(self, prompts: list[str], max_tokens: int = 8) -> list[str]:
         raise NotImplementedError()

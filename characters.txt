@@ -7,6 +7,10 @@ Name: Uryuu Sakuno (瓜生 桜乃)
 Gender: Female
 Aliases: None
 
+Name: Sena Airi (瀬名 愛理)
+Gender: Female
+Aliases: None
+
 [Neko Para Vol.1]
 Name: Minaduki Kashou (水無月 嘉祥)
 Gender: Male

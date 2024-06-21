@@ -1,0 +1,4 @@
+backend:
+  type: "openrouter"
+  model: "cohere/command-r"
+  chat_endpoint: true

@@ -1,0 +1,4 @@
+backend:
+  type: "openrouter"
+  model: "google/gemini-pro"
+  chat_endpoint: true

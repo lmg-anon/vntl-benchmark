@@ -1,10 +1,12 @@
+from typing import Iterator
 from typing_extensions import override
 from modules.model import LanguageModel
 from modules.log import Logger
 from colorama import Fore
 
-from transformers import pipeline
-from unsloth import FastLanguageModel
+import importlib
+if importlib.util.find_spec("unsloth") is None:
+    raise ModuleNotFoundError()
 
 __all__ = ("UnslothModel",)
 
@@ -18,7 +20,9 @@ class UnslothModel(LanguageModel):
             else:
                 Logger.log_event("Error", Fore.RED, "Specify the auxiliary model path using the argument --auxiliary-model.")
             exit(-1)
-        self.new_seed()
+
+        from transformers import pipeline
+        from unsloth import FastLanguageModel
 
         self.model, self.tokenizer = FastLanguageModel.from_pretrained(
             model_name = lora_path if lora_path else model_path,
@@ -36,13 +40,13 @@ class UnslothModel(LanguageModel):
     def __del__(self):
         del self.model
         del self.tokenizer
-        del self.peftModel
-
-    def wait(self):
-        pass
 
     @override
-    def _generate_once(self, data: dict) -> str:
+    def _generate_token(self, data: dict) -> Iterator[str]:
+        raise NotImplementedError()
+    
+    @override
+    def _generate_token_chat(self, data: dict) -> Iterator[str]:
         raise NotImplementedError()
     
     @override
@@ -50,13 +54,13 @@ class UnslothModel(LanguageModel):
         return True
     
     @override
-    def generate_batch(self, prompts: list[str], batch_size: int = 1, max_tokens: int = 8) -> list[str]:
+    def generate_batch(self, prompts: list[str], max_tokens: int = 8) -> list[str]:
         generate_kwargs = {
             "do_sample": False,
             "temperature": 1,
             "repetition_penalty": 1,
             "max_new_tokens": max_tokens,
         }
-        results = self.pipe(prompts, batch_size=batch_size, **generate_kwargs)
+        results = self.pipe(prompts, batch_size=len(prompts), **generate_kwargs)
         results = [o[0]['generated_text'][len(p):] for p, o in zip(prompts, results)]
         return results

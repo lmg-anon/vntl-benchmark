@@ -1,0 +1,8 @@
+backend:
+  type: "openrouter"
+  model: "anthropic/claude-3-sonnet"
+  chat_endpoint: true
+
+model:
+  stop: [] # Remove default linebreak stop
+  prefill: "Translation:" # Without this, sometimes Claude refuses to translate because of "copyright concerns" lol

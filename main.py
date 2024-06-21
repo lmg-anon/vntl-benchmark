@@ -3,7 +3,7 @@ warnings.filterwarnings('ignore')  # Ignore all warnings
 
 from colorama import Fore, init as colorama_init
 from modules.model import LanguageModel
-from modules.model.backends import KcppModel, LcppModel, OobaModel, OaiModel, LPY_PRESENT, EXL2_PRESENT, TF_PRESENT, UNSLOTH_PRESENT
+from modules.model.backends import KcppModel, LcppModel, OobaModel, OaiModel, LPY_PRESENT, EXL2_PRESENT, TF_PRESENT, UNSLOTH_PRESENT, TRANSLATORS_PRESENT, SUGOI_PRESENT
 if LPY_PRESENT:
     from modules.model.backends import LpyModel
 if EXL2_PRESENT:
@@ -12,21 +12,27 @@ if TF_PRESENT:
     from modules.model.backends import TFModel
 if UNSLOTH_PRESENT:
     from modules.model.backends import UnslothModel
+if TRANSLATORS_PRESENT:
+    from modules.model.backends import TLServiceModel
+if SUGOI_PRESENT:
+    from modules.model.backends import SugoiModel
+from modules.prompt.formats import *
 from modules.visual_novel import *
 from modules.translation import *
 from modules.log import Logger
 from tqdm import tqdm
-import torch
 import argparse
 import json
 import time
 import os
 import re
 import random
+import statistics
 
 
 st_model = None
 def get_similarity_batched(texts1, texts2):
+    import torch
     from sentence_transformers import SentenceTransformer, util
     global st_model
     if st_model is None:
@@ -42,7 +48,9 @@ def get_similarity_batched(texts1, texts2):
     return cosine_scores.diag()
 
 def get_similarity(text1, text2):
-    if text1.strip().lower() == text2.strip().lower():
+    text1 = text1.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
+    text2 = text2.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
+    if text1.lower() == text2.lower():
         return 1.0
     return float(get_similarity_batched([text1], [text2])[0])
 
@@ -57,22 +65,22 @@ def detect_high_repetition(line, threshold=25):
                 return line
     return None
 
-def compile_metadata(characters):
-    metadata_sections = []
-    for character in characters:
-        metadata_section = f"Name: {character.name} ({character.japanese_name}) | Gender: {character.gender}"
-        if character.aliases and character.aliases != "None":
-            metadata_section += f" | Aliases: {character.aliases}"
-        metadata_sections.append(metadata_section)
-    return '<<START>>\n' + '\n'.join(random.sample(metadata_sections, k=len(metadata_sections)))
-
 if __name__ == "__main__":
+    SCORE_VERSION = 2
     MAX_ENTRIES_PER_BATCH = 10
     MAX_NEW_TOKENS = 120
-    QUALITY_THRESHOLD = 1 # 0.83
     MAX_BENCHMARK_OUTPUT = 128
 
-    SUPPORTED_BACKENDS = {"koboldcpp", "llamacpp", "ooba", "llamapy", "openai", "exl2", "transformers", "unsloth"}
+    # 'TLAssist-test-val.txt'
+    # 'TLAssist-validation-v4_SIMILARITY_NS.txt'
+    # 'TLAssist-all-v4_SIMILARITY_NS.txt'
+    # 'TLAssist-validation-v5_SIMILARITY.jsonl'
+    # 'Mashiro_full.jsonl'
+    EVAL_DATASET = 'TLAssist-validation-v4_SIMILARITY_NS.txt'
+
+    RESULTS_DIR = "results_mashiro" if "Mashiro" in EVAL_DATASET else "results"
+
+    SUPPORTED_BACKENDS = {"koboldcpp", "llamacpp", "ooba", "llamapy", "openai", "exl2", "transformers", "unsloth", "tlservice", "sugoi"}
     if not LPY_PRESENT:
         SUPPORTED_BACKENDS.remove("llamapy")
     if not EXL2_PRESENT:
@@ -81,33 +89,45 @@ if __name__ == "__main__":
         SUPPORTED_BACKENDS.remove("transformers")
     if not UNSLOTH_PRESENT:
         SUPPORTED_BACKENDS.remove("unsloth")
+    if not TRANSLATORS_PRESENT:
+        SUPPORTED_BACKENDS.remove("tlservice")
+    if not SUGOI_PRESENT:
+        SUPPORTED_BACKENDS.remove("sugoi")
 
     parser = argparse.ArgumentParser(description="VNTL Benchmark")
 
     parser.add_argument("--title", type=str, help="run title")
 
     parser.add_argument("--backend", type=str, choices=SUPPORTED_BACKENDS, help="model backend type")
-    parser.add_argument("--preset", type=str, help="model preset (default: default)")
     parser.add_argument("--context-size", type=int, help="model context size (default: 2048)", default=2048)
     parser.add_argument("--batch-size", type=int, help="model batch size (default: 1)", default=1)
+    parser.add_argument("--preset", type=str, help="model preset (default: default)")
     #parser.add_argument("--format", type=str, help="model prompt format (default: alpaca)")
-    parser.add_argument("--model", type=str, help="model path for non-api backends")
-    parser.add_argument("--host", type=str, help="host for the model backend")
-    parser.add_argument("--api-key", type=str, help="api key for the model backend")
+    parser.add_argument("--prefill", type=str, help="model response prefill, used only in chat endpoints")
+    parser.add_argument("--eos-token", type=str, help="model eos token, used only in completion endpoints (default: </s>)", default="</s>")
+    parser.add_argument("--stop-sequences", type=str, help="model stop sequences", default="[]")
+    parser.add_argument("--model", type=str, help="model path for Non-API backends, or model ID for API backends")
+    parser.add_argument("--host", type=str, help="host of the model backend")
+    parser.add_argument("--api-key", type=str, help="api key of the model backend")
+    parser.add_argument("--chat-api", action="store_true", help="use chat completions endpoint, if available for the backend type")
+    parser.add_argument("--batch-api", action="store_true", help="use batch endpoint, only available for openai")
+    parser.add_argument("--batch-input-file", type=str, help="batch input file path to generate for the batch api")
+    parser.add_argument("--batch-output-file", type=str, help="batch output file path to read for the batch api")
+    parser.add_argument("--extra-api-params", type=str, help="extra api parameters to send in the request body", default="{}")
 
     parser.add_argument("--seed", type=int, help="initial rng seed")
 
     parser.add_argument("--verbose", action="store_true", help="enable verbose output")
 
-    args = parser.parse_args()
+    parser.add_argument("--y", action="store_true", help="")
 
-    print(args.title)
+    args = parser.parse_args()
 
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
     colorama_init()
     Logger.init()
 
-    if args.seed:
+    if args.seed and args.seed >= 0:
         random.seed(args.seed)
         LanguageModel.base_seed = args.seed
 
@@ -116,32 +136,61 @@ if __name__ == "__main__":
 
     scores = []
     processed_prompts = []
-    if os.path.isfile(f"./results/{args.title}.jsonl"):
+    if os.path.isfile(f"./{RESULTS_DIR}/{args.title}.jsonl"):
         while True:
-            reply = input("Do you want to resume the previous run? (Y/N): ").strip().lower()
+            if args.y:
+                reply = "y"
+            else:
+                reply = input("Do you want to resume the previous run? (Y/N): ").strip().lower()
             if reply == "y":
-                with open(f"./results/{args.title}.jsonl", "r", encoding="utf-8") as f:
+                with open(f"./{RESULTS_DIR}/{args.title}.jsonl", "r", encoding="utf-8") as f:
                     for line in f.readlines():
                         obj = json.loads(line)
-                        scores.append(obj["score"])
+                        scores.append(obj["accuracy"])
                         processed_prompts.append(obj["prompt"])
                 break
             elif reply == "n":
                 try:
-                    os.remove(f"./results/{args.title}.jsonl")
+                    os.remove(f"./{RESULTS_DIR}/{args.title}.jsonl")
                 except:
                     pass
                 break
-    
-    model = OaiModel(args.host, args.api_key, args.context_size)
-    model.wait()
 
-    EOS_TOKEN = "</s>"
+    if len(processed_prompts) >= MAX_BENCHMARK_OUTPUT:
+        print("Already finished.")
+        exit(0)
+
+    extra_api_params = json.loads(args.extra_api_params)
+    assert isinstance(extra_api_params, dict)
+
+    stop_sequences = json.loads(args.stop_sequences)
+    assert isinstance(stop_sequences, list)
+
+    if args.backend == "openai":
+        model = OaiModel(args.host, args.api_key, args.model, args.context_size, extra_api_params)
+        model.wait()
+    elif args.backend == "tlservice":
+        model = TLServiceModel(args.model)
+    elif args.backend == "sugoi":
+        model = SugoiModel(args.model)
 
     model.presets = {
         "temperature": 0,
-        "repetition_penalty": 1,
+        "rep_pen": 1,
     }
+
+    if args.batch_input_file:
+        try:
+            os.remove(args.batch_input_file)
+        except:
+            pass
+
+    batch_api_output = []
+    if args.batch_output_file:
+        with open(args.batch_output_file, "r", encoding="utf-8") as f:
+            for line in f.readlines():
+                obj = json.loads(line)
+                batch_api_output.append(obj["response"]["body"]["choices"][0]["message"]["content"])
 
     # Parse the characters file
     books = VisualNovels("characters.txt")
@@ -149,11 +198,7 @@ if __name__ == "__main__":
 
     start_bench = time.time()
 
-    # 'TLAssist-test-val.txt'
-    # 'TLAssist-validation-v4_SIMILARITY_NS.txt'
-    # 'TLAssist-all-v4_SIMILARITY_NS.txt'
-    translation_file_path = 'TLAssist-validation-v4_SIMILARITY_NS.txt'
-    tf = TranslationFile(translation_file_path)
+    tf = TranslationFile(EVAL_DATASET)
     tf.read_file()
 
     entries = tf.entries
@@ -161,7 +206,8 @@ if __name__ == "__main__":
 
     skipping = len(processed_prompts) > 0
 
-    entry_batches: list[list[TranslationEntry]] = [[]]
+    entry_batches: list[list[list[TranslationEntry]]] = [[]]
+    metadata_batches: list[list[str]] = [[]]
     prompt_batches: list[list[str]] = [[]]
     for idx in range(len(entries)):
         batch = entries[max(idx-MAX_ENTRIES_PER_BATCH-1, 0):idx+1]
@@ -170,66 +216,156 @@ if __name__ == "__main__":
         last_entry = batch[-1]
         batch = [entry for entry in batch if entry.book_id == last_entry.book_id]
 
-        if "absolute" not in batch[-1].fidelity and "high" not in batch[-1].fidelity:
-            continue
+        if "Mashiro" in EVAL_DATASET:
+            # For Mashiro dataset
+            if "absolute" in batch[-1].fidelity or "high" in batch[-1].fidelity:
+                continue
+        else:
+            # For SenrenBanka dataset
+            if "absolute" not in batch[-1].fidelity:
+                continue
 
         # We want the LLM to have some completion examples.
-        if idx < 3:
+        if idx < 5:
             continue
 
         ID = batch[-1].book_id
-
-        block = ""
-        for entry in batch:
-            block += \
-                f"<<JAPANESE>>\n" \
-                f"{entry.japanese}\n" \
-                f"<<ENGLISH>>\n" \
-                f"{entry.english if entry != batch[-1] else ''}{EOS_TOKEN if entry != batch[-1] else ''}\n"
-        block = block.strip() + "\n"
-        block = re.sub(r"【(.*?)】：", r"[\1]: ", block)
-
-        # Find all unique speaking characters in this block
-        speaking_characters: set[Character] = set()
-        speaking_names = set(re.findall(r'\[(.*?)\]', block))
-        for name in speaking_names:
-            _character = books.get_character(ID, name)
-            if _character:
-                speaking_characters.add(_character)
-        metadata = compile_metadata(speaking_characters)
-        prompt = metadata + "\n" + block
         
-        #prompt = f"[INST] All messages that I will send from now on will contain Japanese, reply with the translation and only the translation, taking the context of the previous messages into careful consideration.\nAdditional Meta-data:\n```\n{metadata}\n```\nNote: Always start your replies with \"<<ENGLISH>>\". [/INST] Sure thing! Please send the Japanese!</s>" + block
+        if isinstance(model, TLServiceModel) or isinstance(model, SugoiModel):
+            metadata = None
+            prompt = batch[-1].japanese.split("]: ", 1)[-1].split("】：", 1)[-1].split("】:", 1)[-1]
+        else:
+            block = ""
+            for entry in batch:
+                block += \
+                    f"<<JAPANESE>>\n" \
+                    f"{entry.japanese}\n" \
+                    f"<<ENGLISH>>\n" \
+                    f"{entry.english if entry != batch[-1] else ''}{args.eos_token if entry != batch[-1] else ''}\n"
+            block = block.strip() + "\n"
+            block = re.sub(r"【(.*?)】：", r"[\1]: ", block)
+            
+            def compile_metadata(characters):
+                metadata_chars = []
+                for character in characters:
+                    metadata_section = f"[character] Name: {character.name} ({character.japanese_name}) | Gender: {character.gender}"
+                    if character.aliases and character.aliases != "None":
+                        metadata_section += f" | Aliases: {character.aliases}"
+                    metadata_chars.append(metadata_section)
 
+                metadata = ""
+                if metadata_chars:
+                    metadata += '<<METADATA>>\n' + '\n'.join(random.sample(metadata_chars, k=len(metadata_chars))) + "\n"
+                return metadata
+
+            # Find all unique speaking characters in this block
+            speaking_characters: set[Character] = set()
+            speaking_names = set(re.findall(r'\[(.*?)\]', block))
+            for name in speaking_names:
+                _character = books.get_character(ID, name)
+                if _character:
+                    speaking_characters.add(_character)
+            metadata = compile_metadata(speaking_characters)
+            prompt = metadata + "<<START>>\n" + block
+        
         if skipping:
-            skipping = processed_prompts[-1][processed_prompts[-1].index("<<JAPANESE>>"):] != prompt[prompt.index("<<JAPANESE>>"):]
+            if isinstance(model, TLServiceModel) or isinstance(model, SugoiModel):
+                skipping = processed_prompts[-1] != prompt
+            else:
+                skipping = processed_prompts[-1][processed_prompts[-1].index("<<JAPANESE>>"):] != prompt[prompt.index("<<JAPANESE>>"):]
             continue
 
         entry_batches[-1].append(batch)
+        metadata_batches[-1].append(metadata)
         prompt_batches[-1].append(prompt)
         if len(entry_batches[-1]) == args.batch_size:
             entry_batches.append([])
+            metadata_batches.append([])
             prompt_batches.append([])
 
     count = len(processed_prompts)
     pbar = tqdm(total=MAX_BENCHMARK_OUTPUT-len(processed_prompts))
-    for batches, prompts in zip(entry_batches, prompt_batches):
+    for batches, metadatas, prompts in zip(entry_batches, metadata_batches, prompt_batches):
         if count >= MAX_BENCHMARK_OUTPUT:
             break
 
-        tqdm.write("")
-        tqdm.write("Generating...")
+        if not args.batch_input_file and not args.batch_output_file:
+            tqdm.write("")
+            tqdm.write("Generating...")
 
         inf_start = time.time()
 
-        if args.batch_size > 1 and model.supports_batching():
-            results = model.generate_batch(prompts, args.batch_size, MAX_NEW_TOKENS)
-        else:
-            results = []
-            for prompt in prompts:
-                results.append(model.generate(prompt, MAX_NEW_TOKENS, [EOS_TOKEN, "<<JAPANESE>>"]))
+        results = []
+        if args.batch_input_file or args.batch_output_file or args.batch_api:
+            if args.batch_output_file:
+                assert batch_api_output
+                results.append(batch_api_output[count])
+            else:
+                api_batches = []
+                for batch in batches:
+                    messages = [
+                        # TODO: Add "Be mindful of idiomatic expressions or cultural references that may require more nuanced translation to convey the correct meaning."?
+                        {"role": "user", "content": f"""All messages that I send from now on will contain Japanese. Reply with the translation and only the translation, taking the context of the previous messages into careful consideration.
 
-        tqdm.write(f"Finished in {time.time()-inf_start}s")
+Additional Meta-data:
+```
+{metadatas[0]}
+```"""},
+                        {"role": "assistant", "content": """I understand."""}
+                    ]
+                    for entry in batch:
+                        messages.append({"role": "user", "content": entry.japanese})
+                        if entry != batch[-1]:
+                            messages.append({"role": "assistant", "content": entry.english})
+                            if args.prefill:
+                                messages[-1]["content"] = f"{args.prefill} {messages[-1]['content']}"
+                    assert messages[-1]["role"] == "user"
+                    if args.prefill:
+                        messages.append({"role": "assistant", "content": args.prefill})
+                    api_batches.append(messages)
+                if args.batch_input_file:
+                    with open(args.batch_input_file, "a") as f:
+                        for messages in api_batches:
+                            f.write(f"{json.dumps({'custom_id': f'request-{count}', 'method': 'POST', 'url': '/v1/chat/completions', 'body': {'model': model.model, 'messages': messages, 'max_tokens': MAX_NEW_TOKENS, 'temperature': 0}})}\n")
+                    count += 1
+                    pbar.update(1)
+                    continue
+                else:
+                    # TODO: Query API
+                    print("TODO: Query API")
+                    exit(0)
+                    results.append(batch_api_output[count])
+        elif args.chat_api and isinstance(model, OaiModel):
+            for batch in batches:
+                messages = [
+                    # TODO: Add "Be mindful of idiomatic expressions or cultural references that may require more nuanced translation to convey the correct meaning."?
+                    {"role": "user", "content": f"""All messages that I send from now on will contain Japanese. Reply with the translation and only the translation, taking the context of the previous messages into careful consideration.
+
+Additional Meta-data:
+```
+{metadatas[0]}
+```"""},
+                    {"role": "assistant", "content": """I understand."""}
+                ]
+                for entry in batch:
+                    messages.append({"role": "user", "content": entry.japanese})
+                    if entry != batch[-1]:
+                        messages.append({"role": "assistant", "content": entry.english})
+                        if args.prefill:
+                            messages[-1]["content"] = f"{args.prefill} {messages[-1]['content']}"
+                assert messages[-1]["role"] == "user"
+                if args.prefill:
+                    messages.append({"role": "assistant", "content": args.prefill})
+                results.append(model.generate_chat(messages, MAX_NEW_TOKENS, [args.eos_token, "<<JAPANESE>>", *stop_sequences]))
+        elif args.batch_size > 1 and model.supports_batching():
+            assert len(prompts) == args.batch_size
+            results = model.generate_batch(prompts, MAX_NEW_TOKENS)
+        else:
+            for prompt in prompts:
+                results.append(model.generate(prompt, MAX_NEW_TOKENS, [args.eos_token, "<<JAPANESE>>", *stop_sequences]))
+
+        if not args.batch_input_file and not args.batch_output_file:
+            tqdm.write(f"Finished in {time.time()-inf_start}s")
 
         #print(repr(results))
 
@@ -242,41 +378,62 @@ if __name__ == "__main__":
 
             expected_english = batch[-1].english
 
-            #tqdm.write(f"Japanese: {batch[-1].japanese}")
-            #tqdm.write(f"Expected ({batch[-1].fidelity}): {expected_english}")
-            #tqdm.write(f"Generated: {result}")
-            assert result, repr(result)
+            tqdm.write(f"Japanese: {batch[-1].japanese}")
+            tqdm.write(f"Expected ({batch[-1].fidelity}): {expected_english}")
+            tqdm.write(f"Generated: {repr(result)}")
+
+            # if not result:
+            #     print("Nothing generated, score 0.")
+            #     expected_english_full = re.sub(r"【(.*?)】：", r"[\1]: ", expected_english)
+            #     scores.append(0)
+            #     count += 1
+            #     pbar.update(1)
+            #     with open(f"./{RESULTS_DIR}/{args.title}.jsonl", "a", encoding="utf-8") as f:
+            #         f.write(f"{json.dumps({ 'prompt': prompt, 'expected': expected_english_full+args.eos_token, 'generated': '', 'accuracy': 0.0 })}\n")
+            #     continue
+
+            assert result, "Nothing generated."
 
             result_full = result
             expected_english_full = re.sub(r"【(.*?)】：", r"[\1]: ", expected_english)
 
-            expect_split = False
-            if "】：" in expected_english:
-                expect_split = True
-                expected_english = expected_english.split("】：")[1]
-            elif "]: " in expected_english:
-                expect_split = True
-                expected_english = expected_english.split("]: ")[1]
-            if "】：" in result:
-                expect_split = False
-                result = result.split("】：")[1]
-            elif "]: " in result:
-                expect_split = False
-                result = result.split("]: ")[1]
-            #assert not expect_split, (repr(prompt), repr(result))
+            expected_english = expected_english.replace("</s>", "")
+            expected_english = expected_english.split("]: ", 1)[-1].split("】：", 1)[-1].split("】:", 1)[-1]
+            
+            result = result.replace("</s>", "")
+            result = result.split("]: ", 1)[-1].split("】：", 1)[-1].split("】:", 1)[-1]
+            if result.strip():
+                result = [s for s in result.split("\n", 1) if s.strip()][0]
 
-            tqdm.write("Calculating score...")
-            score = get_similarity(expected_english, result)
-            tqdm.write(f"Score: {score}")
+            if detect_high_repetition(result):
+                tqdm.write("High repetition detected.")
+                score = 0
+                tqdm.write(f"Score: {score}")
+            else:
+                tqdm.write("Calculating score...")
+                score = get_similarity(expected_english, result)
+                tqdm.write(f"Score: {score}")
 
             scores.append(score)
             tqdm.write(f"ScoreAvg: {sum(scores)/len(scores)}")
 
-            if score < QUALITY_THRESHOLD and not detect_high_repetition(result):
-                count += 1
-                pbar.update(1)
-                with open(f"./results/{args.title}.jsonl", "a", encoding="utf-8") as f:
-                    f.write(f"{json.dumps({ 'prompt': prompt, 'chosen': expected_english_full+EOS_TOKEN, 'rejected': result_full+EOS_TOKEN, 'score': float(score) })}\n")
+            def calculate_stdev(scores):
+                scores = [score for score in scores if score > 0]
+                return statistics.stdev(scores) if len(scores) > 1 else 0
+
+            def calculate_overall_score(scores, k=1):
+                mean = statistics.mean(scores)
+                std_dev = calculate_stdev(scores)
+                overall_score = mean - k * std_dev
+                return overall_score
+            
+            tqdm.write(f"ScoreAvg DevPen: {calculate_overall_score(scores)}")
+            tqdm.write(f"Std Dev: {calculate_stdev(scores)}")
+
+            count += 1
+            pbar.update(1)
+            with open(f"./{RESULTS_DIR}/{args.title}.jsonl", "a", encoding="utf-8") as f:
+                f.write(f"{json.dumps({ 'prompt': prompt, 'expected': expected_english_full+args.eos_token, 'generated': result_full+args.eos_token, 'accuracy': float(score) })}\n")
 
     pbar.close()
 

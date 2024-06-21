@@ -33,16 +33,14 @@ class LanguageModel(abc.ABC):
     def get_identifier(self) -> str:
         return f"Model backend{' (auxiliary)' if self.is_auxiliary else ''}"
 
-    @abc.abstractmethod
     def wait(self):
         pass
 
-    @abc.abstractmethod
     def _abort(self):
         pass
 
     @abc.abstractmethod
-    def _generate_once(self, data: dict) -> Iterator[str]:
+    def _generate_token(self, data: dict) -> Iterator[str]:
         return ""
 
     def generate_iter(self, prompt: Prompt | str, max_tokens: int = 8, stop_sequences: list[str] = []) -> Iterator[tuple[str, str]]:
@@ -56,11 +54,11 @@ class LanguageModel(abc.ABC):
             "prompt": prompt.to_string() if not isinstance(prompt, str) else prompt
         })
 
-        if self.seed:
+        if self.seed and self.seed >= 0:
             data["sampler_seed"] = self.seed
 
         output_str = str()
-        for iter, response_text in enumerate(self._generate_once(data)):
+        for iter, response_text in enumerate(self._generate_token(data)):
             # Skip if we couldn't generate anything.
             if not response_text:
                 continue
@@ -103,9 +101,51 @@ class LanguageModel(abc.ABC):
 
         return result, result_gen
     
+    def supports_chat(self) -> bool:
+        return False
+
+    @abc.abstractmethod
+    def _generate_token_chat(self, data: dict) -> Iterator[str]:
+        return ""
+    
+    def generate_chat_iter(self, messages: list[dict], max_tokens: int = 8, stop_sequences: list[str] = []) -> Iterator[str]:
+        stop_sequences = stop_sequences if stop_sequences else []
+        data = self.presets.copy()
+        data.update({
+            "max_context_length": self.max_context,
+            "max_length": max_tokens,
+            "stop_sequence": stop_sequences,
+            "stream": True,
+            "messages": messages
+        })
+
+        if self.seed:
+            data["sampler_seed"] = self.seed
+
+        output_str = str()
+        for iter, response_text in enumerate(self._generate_token_chat(data)):
+            # Skip if we couldn't generate anything.
+            if not response_text:
+                continue
+
+            output_str += response_text
+            #Logger.write(f"Gen {iter}: {repr(response_text)}", True)
+            if any((match := s) in output_str for s in stop_sequences):
+                yield response_text.split(match, 2)[0], output_str.split(match, 2)[0]
+                break
+            yield response_text, output_str
+
+        self._abort()
+
+    def generate_chat(self, messages: list[dict], max_tokens: int = 8, stop_sequences: list[str] = []) -> str:
+        result = str()
+        for _, output in self.generate_chat_iter(messages, max_tokens, stop_sequences):
+            result = output
+        return result
+    
     def supports_batching(self) -> bool:
         return False
     
     @abc.abstractmethod
-    def generate_batch(self, prompts: list[str], batch_size: int = 1, max_tokens: int = 8) -> list[str]:
+    def generate_batch(self, prompts: list[str], max_tokens: int = 8) -> list[str]:
         return []

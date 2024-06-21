@@ -1,0 +1,4 @@
+backend:
+  type: "openrouter"
+  model: "meta-llama/llama-3-8b-instruct"
+  chat_endpoint: true

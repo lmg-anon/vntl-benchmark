@@ -1,0 +1,13 @@
+downloader:
+  repo: "Qwen/Qwen2-7B-Instruct-GGUF"
+  filters: "q8_0"
+  output: ".\\gguf"
+  #delete_after: true
+
+backend:
+  type: "local_openai"
+  chat_endpoint: False
+
+run:
+  path: ".\\koboldcpp (6).exe"
+  arguments: "--model \".\\gguf\\qwen2-7b-instruct-q8_0.gguf\" --threads 5 --blasthreads 5 --contextsize 2048 --usecublas normal 0 --gpulayers 999 --highpriority --flashattention --nommap --multiuser 1"

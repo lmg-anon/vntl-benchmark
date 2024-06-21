@@ -22,3 +22,13 @@ try:
     UNSLOTH_PRESENT = True
 except ModuleNotFoundError as e:
     UNSLOTH_PRESENT = False
+try:
+    from .tlservice_backend import TLServiceModel
+    TRANSLATORS_PRESENT = True
+except ModuleNotFoundError as e:
+    TRANSLATORS_PRESENT = False
+try:
+    from .sugoi_backend import SugoiModel
+    SUGOI_PRESENT = True
+except ModuleNotFoundError as e:
+    SUGOI_PRESENT = False
