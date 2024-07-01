@@ -3,6 +3,8 @@ from typing_extensions import override
 from modules.model import LanguageModel
 from modules.log import Logger
 from colorama import Fore
+import concurrent.futures
+from functools import partial
 import requests
 import json
 import time
@@ -170,6 +172,23 @@ class OaiModel(LanguageModel):
                 Logger.log_event("Warning", Fore.YELLOW, f"{self.get_identifier()} returned an invalid response. Error while parsing {repr(lastEvent)}: {e}", True)
                 continue
     
+    def supports_batching(self) -> bool:
+        return True
+    
     @override
-    def generate_batch(self, prompts: list[str], max_tokens: int = 8) -> list[str]:
-        raise NotImplementedError()
+    def generate_batch(self, prompts: list[str], max_tokens: int = 8, stop_sequences: list[str] = []) -> list[str]:
+        def gen_prompt(prompt: str, idx: int) -> tuple[str, int]:
+            return self.generate(prompt, max_tokens, stop_sequences), idx
+        
+        results = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(prompts)) as executor:
+            process_func = partial(gen_prompt)
+            future_to_idx = {executor.submit(process_func, prompt, idx): idx 
+                            for idx, prompt in enumerate(prompts)}
+            
+            for future in concurrent.futures.as_completed(future_to_idx):
+                result, idx = future.result()
+                results.append((idx, result))
+
+        results.sort(key=lambda x: x[0])
+        return [prompt for _, prompt in results]

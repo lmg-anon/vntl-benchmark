@@ -1,0 +1,5 @@
+backend:
+  type: "openai"
+  host: "http://127.0.0.1:5000"
+  api_key: "17d6f6dbc646d8b572a17ab232cafc92"
+  chat_endpoint: False

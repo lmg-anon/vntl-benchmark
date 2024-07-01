@@ -7,3 +7,4 @@ pyyaml
 sseclient-py
 typing_extensions
 sentence_transformers
+sacrebleu

@@ -99,5 +99,5 @@ class LcppModel(LanguageModel):
         raise NotImplementedError()
     
     @override
-    def generate_batch(self, prompts: list[str], max_tokens: int = 8) -> list[str]:
+    def generate_batch(self, prompts: list[str], max_tokens: int = 8, stop_sequences: list[str] = []) -> list[str]:
         raise NotImplementedError()

@@ -1,3 +1,0 @@
-backend:
-  type: "tlservice"
-  model: "deepl"

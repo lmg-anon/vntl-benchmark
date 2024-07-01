@@ -28,6 +28,7 @@ import os
 import re
 import random
 import statistics
+import sacrebleu
 
 
 st_model = None
@@ -54,6 +55,22 @@ def get_similarity(text1, text2):
         return 1.0
     return float(get_similarity_batched([text1], [text2])[0])
 
+def get_bleu(ref, hyp):
+    ref = ref.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
+    hyp = hyp.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
+    if ref.lower() == hyp.lower():
+        return 100
+    bleu = sacrebleu.sentence_bleu(hyp, [ref])
+    return bleu.score
+
+def get_chrf(ref, hyp):
+    ref = ref.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
+    hyp = hyp.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
+    if ref.lower() == hyp.lower():
+        return 100
+    chrf = sacrebleu.sentence_chrf(hyp, [ref])
+    return chrf.score
+
 def detect_high_repetition(line, threshold=25):
     def is_repetition(substring, fullstring):
         count = fullstring.count(substring)
@@ -71,14 +88,14 @@ if __name__ == "__main__":
     MAX_NEW_TOKENS = 120
     MAX_BENCHMARK_OUTPUT = 128
 
-    # 'TLAssist-test-val.txt'
-    # 'TLAssist-validation-v4_SIMILARITY_NS.txt'
-    # 'TLAssist-all-v4_SIMILARITY_NS.txt'
-    # 'TLAssist-validation-v5_SIMILARITY.jsonl'
-    # 'Mashiro_full.jsonl'
-    EVAL_DATASET = 'TLAssist-validation-v4_SIMILARITY_NS.txt'
+    # # 'TLAssist-test-val.txt'
+    # # 'TLAssist-validation-v4_SIMILARITY_NS.txt'
+    # # 'TLAssist-all-v4_SIMILARITY_NS.txt'
+    # # 'TLAssist-validation-v5_SIMILARITY.jsonl'
+    # # 'Mashiro_full.jsonl'
+    # EVAL_DATASET = 'Mashiro_full.jsonl' #'TLAssist-validation-v4_SIMILARITY_NS.txt'
 
-    RESULTS_DIR = "results_mashiro" if "Mashiro" in EVAL_DATASET else "results"
+    # RESULTS_DIR = "results_mashiro" if "Mashiro" in EVAL_DATASET else "results"
 
     SUPPORTED_BACKENDS = {"koboldcpp", "llamacpp", "ooba", "llamapy", "openai", "exl2", "transformers", "unsloth", "tlservice", "sugoi"}
     if not LPY_PRESENT:
@@ -115,7 +132,12 @@ if __name__ == "__main__":
     parser.add_argument("--batch-output-file", type=str, help="batch output file path to read for the batch api")
     parser.add_argument("--extra-api-params", type=str, help="extra api parameters to send in the request body", default="{}")
 
-    parser.add_argument("--seed", type=int, help="initial rng seed")
+    parser.add_argument("--results-path", type=str, help="results directory path (default: ./results)", default="./results")
+    parser.add_argument("--dataset-path", type=str, help="eval dataset path (default: ./TLAssist-validation-v4_SIMILARITY_NS.txt)", default="./TLAssist-validation-v4_SIMILARITY_NS.txt")
+
+    parser.add_argument("--shuffle", action="store_true", help="enable prompt shuffling")
+
+    parser.add_argument("--seed", type=int, help="initial rng seed (default: 3407)", default=3407)
 
     parser.add_argument("--verbose", action="store_true", help="enable verbose output")
 
@@ -136,14 +158,14 @@ if __name__ == "__main__":
 
     scores = []
     processed_prompts = []
-    if os.path.isfile(f"./{RESULTS_DIR}/{args.title}.jsonl"):
+    if os.path.isfile(os.path.join(args.results_path, f"{args.title}.jsonl")):
         while True:
             if args.y:
                 reply = "y"
             else:
                 reply = input("Do you want to resume the previous run? (Y/N): ").strip().lower()
             if reply == "y":
-                with open(f"./{RESULTS_DIR}/{args.title}.jsonl", "r", encoding="utf-8") as f:
+                with open(os.path.join(args.results_path, f"{args.title}.jsonl"), "r", encoding="utf-8") as f:
                     for line in f.readlines():
                         obj = json.loads(line)
                         scores.append(obj["accuracy"])
@@ -151,7 +173,7 @@ if __name__ == "__main__":
                 break
             elif reply == "n":
                 try:
-                    os.remove(f"./{RESULTS_DIR}/{args.title}.jsonl")
+                    os.remove(os.path.join(args.results_path, f"{args.title}.jsonl"))
                 except:
                     pass
                 break
@@ -198,7 +220,7 @@ if __name__ == "__main__":
 
     start_bench = time.time()
 
-    tf = TranslationFile(EVAL_DATASET)
+    tf = TranslationFile(args.dataset_path)
     tf.read_file()
 
     entries = tf.entries
@@ -216,7 +238,7 @@ if __name__ == "__main__":
         last_entry = batch[-1]
         batch = [entry for entry in batch if entry.book_id == last_entry.book_id]
 
-        if "Mashiro" in EVAL_DATASET:
+        if "Mashiro" in args.dataset_path:
             # For Mashiro dataset
             if "absolute" in batch[-1].fidelity or "high" in batch[-1].fidelity:
                 continue
@@ -282,6 +304,11 @@ if __name__ == "__main__":
             entry_batches.append([])
             metadata_batches.append([])
             prompt_batches.append([])
+
+    if args.shuffle:
+        random.Random(args.seed).shuffle(entry_batches)
+        random.Random(args.seed).shuffle(metadata_batches)
+        random.Random(args.seed).shuffle(prompt_batches)
 
     count = len(processed_prompts)
     pbar = tqdm(total=MAX_BENCHMARK_OUTPUT-len(processed_prompts))
@@ -359,7 +386,7 @@ Additional Meta-data:
                 results.append(model.generate_chat(messages, MAX_NEW_TOKENS, [args.eos_token, "<<JAPANESE>>", *stop_sequences]))
         elif args.batch_size > 1 and model.supports_batching():
             assert len(prompts) == args.batch_size
-            results = model.generate_batch(prompts, MAX_NEW_TOKENS)
+            results = model.generate_batch(prompts, MAX_NEW_TOKENS, [args.eos_token, "<<JAPANESE>>", *stop_sequences])
         else:
             for prompt in prompts:
                 results.append(model.generate(prompt, MAX_NEW_TOKENS, [args.eos_token, "<<JAPANESE>>", *stop_sequences]))
@@ -388,7 +415,7 @@ Additional Meta-data:
             #     scores.append(0)
             #     count += 1
             #     pbar.update(1)
-            #     with open(f"./{RESULTS_DIR}/{args.title}.jsonl", "a", encoding="utf-8") as f:
+            #     with open(os.path.join(args.results_path, f"{args.title}.jsonl"), "a", encoding="utf-8") as f:
             #         f.write(f"{json.dumps({ 'prompt': prompt, 'expected': expected_english_full+args.eos_token, 'generated': '', 'accuracy': 0.0 })}\n")
             #     continue
 
@@ -398,10 +425,10 @@ Additional Meta-data:
             expected_english_full = re.sub(r"【(.*?)】：", r"[\1]: ", expected_english)
 
             expected_english = expected_english.replace("</s>", "")
-            expected_english = expected_english.split("]: ", 1)[-1].split("】：", 1)[-1].split("】:", 1)[-1]
+            expected_english = expected_english.split("]: ", 1)[-1].split("】：", 1)[-1].split("】:", 1)[-1].split(":** ", 1)[-1]
             
             result = result.replace("</s>", "")
-            result = result.split("]: ", 1)[-1].split("】：", 1)[-1].split("】:", 1)[-1]
+            result = result.split("]: ", 1)[-1].split("】：", 1)[-1].split("】:", 1)[-1].split(":** ", 1)[-1]
             if result.strip():
                 result = [s for s in result.split("\n", 1) if s.strip()][0]
 
@@ -430,10 +457,13 @@ Additional Meta-data:
             tqdm.write(f"ScoreAvg DevPen: {calculate_overall_score(scores)}")
             tqdm.write(f"Std Dev: {calculate_stdev(scores)}")
 
+            bleu = get_bleu(expected_english, result) / 100
+            chrf = get_chrf(expected_english, result) / 100
+
             count += 1
             pbar.update(1)
-            with open(f"./{RESULTS_DIR}/{args.title}.jsonl", "a", encoding="utf-8") as f:
-                f.write(f"{json.dumps({ 'prompt': prompt, 'expected': expected_english_full+args.eos_token, 'generated': result_full+args.eos_token, 'accuracy': float(score) })}\n")
+            with open(os.path.join(args.results_path, f"{args.title}.jsonl"), "a", encoding="utf-8") as f:
+                f.write(f"{json.dumps({ 'prompt': prompt, 'expected': expected_english_full+args.eos_token, 'generated': result_full+args.eos_token, 'accuracy': float(score), 'bleu': bleu, 'chrf': chrf })}\n")
 
     pbar.close()
 

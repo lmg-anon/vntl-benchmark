@@ -1,0 +1,6 @@
+backend:
+  #type: "tlservice"
+  #model: "deepl"
+  type: "openai"
+  host: "http://127.0.0.1:8584"
+  chat_endpoint: false

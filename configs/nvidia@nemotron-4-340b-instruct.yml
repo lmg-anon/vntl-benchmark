@@ -1,0 +1,4 @@
+backend:
+  type: "openrouter"
+  model: "nvidia/nemotron-4-340b-instruct"
+  chat_endpoint: true

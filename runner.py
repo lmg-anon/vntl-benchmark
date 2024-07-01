@@ -23,6 +23,8 @@ downloaded_models = set()
 class Config:
     concurrent_downloads: int = 0
     model_cache_size: int = 0
+    results_path: str = ""
+    dataset_path: str = ""
     extra_args: str = ""
     verbose: bool = False
     clean: bool = False
@@ -86,7 +88,7 @@ def get_run_command(run: RunParams | None, model: ModelParams, backend: BackendP
         command = f"\"{run.path}\" {run.arguments.format(model_path = backend.model, threads = model.thread_number, context_size = model.context_size, port = port)}"
     return command
 
-def run_python_script(title: str, model: ModelParams, backend: BackendParams, extra_args: str):
+def run_python_script(title: str, model: ModelParams, backend: BackendParams, config: Config, extra_args: str):
     command = f"\"{sys.executable}\" main.py --y --title \"{title}\" --backend {backend.type} --context-size {model.context_size} --batch-size {model.batch_size}"
 
     if model.seed:
@@ -119,6 +121,10 @@ def run_python_script(title: str, model: ModelParams, backend: BackendParams, ex
     elif backend.type in ["llamapy", "sugoi", "tlservice"]:
         command += f" --model {backend.model}"
 
+    if config.results_path:
+        command += f" --results-path \"{config.results_path}\""
+    if config.dataset_path:
+        command += f" --dataset-path \"{config.dataset_path}\""
     if extra_args:
         command += f" {extra_args}"
 
@@ -195,10 +201,10 @@ def run_plan(config: Config):
 
         clean = item.get("clean", config.clean)
         allow_resume = item.get("allow_resume", config.allow_resume)
-        if os.path.isfile(f"./results/{title}.jsonl"):
+        if os.path.isfile(os.path.join(config.results_path, f"{title}.jsonl")):
             if clean:
                 try:
-                    os.remove(f"./results/{title}.jsonl")
+                    os.remove(os.path.join(config.results_path, f"{title}.jsonl"))
                 except:
                     pass
             elif not allow_resume:
@@ -248,7 +254,7 @@ def run_plan(config: Config):
             except:
                 pass
 
-        run_python_script(title, model, backend, extra_args)
+        run_python_script(title, model, backend, config, extra_args)
 
         if downloader is not None:
             downloaded_models.remove(downloader.output)
@@ -293,6 +299,9 @@ if __name__ == "__main__":
     parser.add_argument("--clean", action="store_true", help="enable clean run")
     parser.add_argument("--allow-resume", action="store_true", help="enable resume run")
 
+    parser.add_argument("--results-path", type=str, help="results path to run main script", default="")
+    parser.add_argument("--dataset-path", type=str, help="dataset path to run main script", default="")
+
     parser.add_argument("--extra-args", type=str, help="extra args to run main script", default="")
     parser.add_argument("--verbose", action="store_true", help="enable verbose output")
 
@@ -306,6 +315,8 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
 
     config = Config(**config)
+    config.results_path = args.results_path if not config.results_path else f"{config.results_path} {args.results_path}"
+    config.dataset_path = args.dataset_path if not config.dataset_path else f"{config.dataset_path} {args.dataset_path}"
     config.extra_args = args.extra_args if not config.extra_args else f"{config.extra_args} {args.extra_args}"
     config.verbose = config.verbose if config.verbose else args.verbose
     config.clean = config.clean if config.clean else args.clean
