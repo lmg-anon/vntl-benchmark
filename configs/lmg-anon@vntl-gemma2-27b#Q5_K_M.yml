@@ -1,0 +1,13 @@
+# downloader:
+#   repo: "mradermacher/gemma-2-27b-GGUF"
+#   filters: "q5_k_m"
+#   output: ".\\gguf"
+#   #delete_after: true
+
+backend:
+  type: "local_openai"
+  chat_endpoint: False
+
+run:
+  path: ".\\koboldcpp_cu12.exe"
+  arguments: "--model \".\\gguf\\vntl-gemma2-27b-Q5_K_M.gguf\" --threads 5 --blasthreads 5 --contextsize 2048 --usecublas mmq 0 --gpulayers 20 --highpriority --flashattention --nommap --multiuser 1 --noshift"

@@ -14,7 +14,7 @@ __all__ = ("OaiModel",)
 
 
 class OaiModel(LanguageModel):
-    def __init__(self, oai_host: str, api_key: str, model: str, max_context: int, extra_api_params: dict = {}, auxiliary: bool = False):
+    def __init__(self, oai_host: str, api_key: str, model: str, max_context: int, extra_api_params: dict = {}, extra_api_headers: dict = {}, auxiliary: bool = False):
         assert(isinstance(oai_host, str))
         if not oai_host:
             if not auxiliary:
@@ -28,6 +28,7 @@ class OaiModel(LanguageModel):
         self.api_key = api_key
         self.model = model
         self.extra_api_params = extra_api_params
+        self.extra_api_headers = extra_api_headers
         super().__init__(max_context, auxiliary)
 
     @override
@@ -70,6 +71,8 @@ class OaiModel(LanguageModel):
 
     @override
     def _generate_token(self, data: dict) -> Iterator[str]:
+        self._abort()
+
         data = self._convert_data(data)
         if self.model:
             data.update({
@@ -77,11 +80,17 @@ class OaiModel(LanguageModel):
             })
         if self.extra_api_params:
             data.update(self.extra_api_params)
-        self._abort()
+
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.api_key}'
+        }
+        if self.extra_api_headers:
+            headers.update(self.extra_api_headers)
 
         for _ in range(5):
             try:
-                response = requests.post(f"{self.oai_host}/v1/completions", data=json.dumps(data), stream=True, headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {self.api_key}'})
+                response = requests.post(f"{self.oai_host}/v1/completions", data=json.dumps(data), stream=True, headers=headers)
                 client = sseclient.SSEClient(response)  # type: ignore
             except Exception as e:
                 Logger.log_event("Error", Fore.RED, f"{self.get_identifier()} is offline.")
@@ -123,6 +132,8 @@ class OaiModel(LanguageModel):
 
     @override
     def _generate_token_chat(self, data: dict) -> Iterator[str]:
+        self._abort()
+
         data = self._convert_data(data)
         if self.model:
             data.update({
@@ -130,11 +141,17 @@ class OaiModel(LanguageModel):
             })
         if self.extra_api_params:
             data.update(self.extra_api_params)
-        self._abort()
+
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.api_key}'
+        }
+        if self.extra_api_headers:
+            headers.update(self.extra_api_headers)
 
         for _ in range(5):
             try:
-                response = requests.post(f"{self.oai_host}/v1/chat/completions", data=json.dumps(data), stream=True, headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {self.api_key}'})
+                response = requests.post(f"{self.oai_host}/v1/chat/completions", data=json.dumps(data), stream=True, headers=headers)
                 client = sseclient.SSEClient(response)  # type: ignore
             except Exception as e:
                 Logger.log_event("Error", Fore.RED, f"{self.get_identifier()} is offline.")

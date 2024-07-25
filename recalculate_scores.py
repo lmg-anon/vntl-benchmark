@@ -21,23 +21,23 @@ def get_similarity_batched(texts1, texts2):
     return cosine_scores.diag()
 
 def get_similarity(text1, text2):
-    text1 = text1.strip("っ。～…―（）「」｢｣『』“”\"'，、○.,()«»~ \t\r\n")
-    text2 = text2.strip("っ。～…―（）「」｢｣『』“”\"'，、○.,()«»~ \t\r\n")
+    text1 = text1.strip("っ。～…―（）「」｢｣『』“”„\"'，、○.,()«»~ \t\r\n")
+    text2 = text2.strip("っ。～…―（）「」｢｣『』“”„\"'，、○.,()«»~ \t\r\n")
     if text1.lower() == text2.lower():
         return 1.0
     return float(get_similarity_batched([text1], [text2])[0])
 
 def get_bleu(ref, hyp):
-    ref = ref.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
-    hyp = hyp.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
+    ref = ref.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
+    hyp = hyp.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
     if ref.lower() == hyp.lower():
         return 100
     bleu = sacrebleu.sentence_bleu(hyp, [ref])
     return bleu.score
 
 def get_chrf(ref, hyp):
-    ref = ref.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
-    hyp = hyp.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
+    ref = ref.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
+    hyp = hyp.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
     if ref.lower() == hyp.lower():
         return 100
     chrf = sacrebleu.sentence_chrf(hyp, [ref])

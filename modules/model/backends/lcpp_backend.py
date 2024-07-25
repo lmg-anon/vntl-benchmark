@@ -55,6 +55,9 @@ class LcppModel(LanguageModel):
         rename_dict_key("stop_sequence", "stop")
         if "stop" not in data:
             data["stop"] = []
+        # TODO: Stream support.
+        if "stream" in data:
+            del data["stream"]
         data["n_keep"] = -1
         return data
 

@@ -52,6 +52,7 @@ class BackendParams:
     chat_endpoint: bool = False
     batch_endpoint: bool = False
     extra_api_params: dict = None
+    extra_api_headers: dict = None
 
 @dataclass
 class RunParams:
@@ -118,6 +119,9 @@ def run_python_script(title: str, model: ModelParams, backend: BackendParams, co
         if backend.extra_api_params:
             extra_api_params = json.dumps(backend.extra_api_params).replace('"', '\\"')
             command += f" --extra-api-params \"{extra_api_params}\""
+        if backend.extra_api_headers:
+            extra_api_headers = json.dumps(backend.extra_api_headers).replace('"', '\\"')
+            command += f" --extra-api-headers \"{extra_api_headers}\""
     elif backend.type in ["llamapy", "sugoi", "tlservice"]:
         command += f" --model {backend.model}"
 
@@ -185,7 +189,7 @@ def run_plan(config: Config):
             if "model" not in item:
                 item["model"] = {}
             for key, value in config.base_model.items():
-                if key not in item["model"] or not item["model"][key]:
+                if key not in item["model"]: #or not item["model"][key]:
                     item["model"][key] = value
 
         downloader = DownloaderParams(**item["downloader"]) if "downloader" in item else None

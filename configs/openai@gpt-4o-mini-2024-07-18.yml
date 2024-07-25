@@ -1,0 +1,4 @@
+backend:
+  type: "openai"
+  model: "gpt-4o-mini-2024-07-18"
+  batch_endpoint: true

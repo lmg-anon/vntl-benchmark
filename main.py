@@ -49,23 +49,23 @@ def get_similarity_batched(texts1, texts2):
     return cosine_scores.diag()
 
 def get_similarity(text1, text2):
-    text1 = text1.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
-    text2 = text2.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
+    text1 = text1.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
+    text2 = text2.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
     if text1.lower() == text2.lower():
         return 1.0
     return float(get_similarity_batched([text1], [text2])[0])
 
 def get_bleu(ref, hyp):
-    ref = ref.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
-    hyp = hyp.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
+    ref = ref.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
+    hyp = hyp.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
     if ref.lower() == hyp.lower():
         return 100
     bleu = sacrebleu.sentence_bleu(hyp, [ref])
     return bleu.score
 
 def get_chrf(ref, hyp):
-    ref = ref.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
-    hyp = hyp.strip("っ。～…―（）「」｢｣『』“”\"'`，、○.,()«»~ \t\r\n")
+    ref = ref.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
+    hyp = hyp.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
     if ref.lower() == hyp.lower():
         return 100
     chrf = sacrebleu.sentence_chrf(hyp, [ref])
@@ -130,7 +130,8 @@ if __name__ == "__main__":
     parser.add_argument("--batch-api", action="store_true", help="use batch endpoint, only available for openai")
     parser.add_argument("--batch-input-file", type=str, help="batch input file path to generate for the batch api")
     parser.add_argument("--batch-output-file", type=str, help="batch output file path to read for the batch api")
-    parser.add_argument("--extra-api-params", type=str, help="extra api parameters to send in the request body", default="{}")
+    parser.add_argument("--extra-api-params", type=str, help="extra parameters to send in the api request", default="{}")
+    parser.add_argument("--extra-api-headers", type=str, help="extra headers to send in the api request", default="{}")
 
     parser.add_argument("--results-path", type=str, help="results directory path (default: ./results)", default="./results")
     parser.add_argument("--dataset-path", type=str, help="eval dataset path (default: ./TLAssist-validation-v4_SIMILARITY_NS.txt)", default="./TLAssist-validation-v4_SIMILARITY_NS.txt")
@@ -185,15 +186,27 @@ if __name__ == "__main__":
     extra_api_params = json.loads(args.extra_api_params)
     assert isinstance(extra_api_params, dict)
 
+    extra_api_headers = json.loads(args.extra_api_headers)
+    assert isinstance(extra_api_headers, dict)
+
     stop_sequences = json.loads(args.stop_sequences)
     assert isinstance(stop_sequences, list)
 
     if args.backend == "openai":
-        model = OaiModel(args.host, args.api_key, args.model, args.context_size, extra_api_params)
+        model = OaiModel(args.host, args.api_key, args.model, args.context_size, extra_api_params, extra_api_headers)
+        model.wait()
+    elif args.backend == "llamacpp":
+        assert not extra_api_params
+        assert not extra_api_headers
+        model = LcppModel(args.host, args.context_size)
         model.wait()
     elif args.backend == "tlservice":
+        assert not extra_api_params
+        assert not extra_api_headers
         model = TLServiceModel(args.model)
     elif args.backend == "sugoi":
+        assert not extra_api_params
+        assert not extra_api_headers
         model = SugoiModel(args.model)
 
     model.presets = {

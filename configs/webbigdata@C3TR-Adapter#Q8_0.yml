@@ -1,0 +1,13 @@
+downloader:
+  repo: "webbigdata/C3TR-Adapter_gguf"
+  filters: "q8_0"
+  output: ".\\gguf"
+  #delete_after: true
+
+backend:
+  type: "local_openai"
+  chat_endpoint: False
+
+run:
+  path: ".\\koboldcpp_cu12.exe"
+  arguments: "--model \".\\gguf\\C3TR-Adapter.f16.Q8_0.gguf\" --threads 5 --blasthreads 5 --contextsize 2048 --usecublas mmq 0 --gpulayers 38 --highpriority --flashattention --nommap --multiuser 1"

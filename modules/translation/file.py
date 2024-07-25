@@ -4,11 +4,12 @@ __all__ = ("TranslationFile", "TranslationEntry",)
 
 
 class TranslationEntry:
-    def __init__(self, japanese: str, english: str, fidelity: str = None, id: str = None):
+    def __init__(self, japanese: str, english: str, fidelity: str = None, id: str = None, subidx: int = None):
         self.japanese = japanese.strip()
         self.english = english.strip()
         self.fidelity = fidelity
         self.book_id = id
+        self.subidx = subidx
 
     def __str__(self):
         return f"Japanese: {self.japanese}\n" \
@@ -38,12 +39,13 @@ class TranslationFile:
 
                 data = json.loads(line)
                 current_id = data.get('vn')
+                current_subidx = data.get('subidx')
                 current_japanese = data.get('japanese').replace("\n", "").replace("\r", "")
                 current_english = data.get('english').replace("\n", "").replace("\r", "")
                 accuracy = data.get('accuracy')
                 current_fidelity = self.get_fidelity_label(accuracy)
                 
-                entry = TranslationEntry(current_japanese, current_english, current_fidelity, current_id)
+                entry = TranslationEntry(current_japanese, current_english, current_fidelity, current_id, current_subidx)
                 self.entries.append(entry)
 
     @staticmethod
@@ -62,6 +64,7 @@ class TranslationFile:
             lines = f.readlines()
 
         current_id = None
+        current_subidx = None
         current_japanese = None
         current_english = None
         current_fidelity = None
@@ -71,8 +74,9 @@ class TranslationFile:
             if line.startswith('<<JAPANESE>>'):
                 # If there's a previous entry, commit it
                 if current_japanese is not None and current_english is not None:
-                    entry = TranslationEntry(current_japanese, current_english, current_fidelity, current_id)
+                    entry = TranslationEntry(current_japanese, current_english, current_fidelity, current_id, current_subidx)
                     self.entries.append(entry)
+                    current_subidx += 1
                 current_japanese = ''
                 current_english = current_fidelity = None
             elif line.startswith('<<ENGLISH>>'):
@@ -80,13 +84,14 @@ class TranslationFile:
                 current_english = ''
             elif line.startswith('<<ID>>'):
                 current_id = self.parse_id(line)
+                current_subidx = 0
             elif line == '<<NEW_FILE>>':
                 # If there's a previous entry, commit it
                 if current_japanese is not None and current_english is not None:
-                    entry = TranslationEntry(current_japanese, current_english, current_fidelity, current_id)
+                    entry = TranslationEntry(current_japanese, current_english, current_fidelity, current_id, current_subidx)
                     self.entries.append(entry)
                 # Reset for a new file/entry
-                current_id = current_japanese = current_english = current_fidelity = None
+                current_id = current_subidx = current_japanese = current_english = current_fidelity = None
             elif line.startswith('<<'):
                 assert False, line
             elif current_japanese is not None and current_english is None:

@@ -1,0 +1,7 @@
+backend:
+  type: "openrouter"
+  model: "mistralai/mistral-large"
+  chat_endpoint: true
+
+model:
+  stop: [] # Remove default linebreak stop

@@ -1,0 +1,7 @@
+backend:
+  type: "lurker_proxy"
+  model: "gpt-4-0613"
+  chat_endpoint: true
+
+model:
+  stop: [] # Remove default linebreak stop
