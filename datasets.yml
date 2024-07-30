@@ -1,0 +1,11 @@
+- name: "Senren"
+  results_path: "results"
+  dataset_path: "TLAssist-validation-v4_SIMILARITY_NS.txt"
+  samples: 128
+  samples_fd: ["absolute"]
+
+- name: "Mashiro"
+  results_path: "results_mashiro"
+  dataset_path: "Mashiro_full.jsonl"
+  samples: 128
+  samples_fd: ["low", "medium"]
