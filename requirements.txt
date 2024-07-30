@@ -8,3 +8,4 @@ sseclient-py
 typing_extensions
 sentence_transformers
 sacrebleu
+jinja2

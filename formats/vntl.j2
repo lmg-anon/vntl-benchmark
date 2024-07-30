@@ -1,0 +1,17 @@
+{%- if speaking_characters -%}
+    {{ '<<METADATA>>\n' }}
+    {%- for char in speaking_characters -%}
+        {{ '[character] Name: ' + char.name + ' (' + char.japanese_name + ') | Gender: ' + char.gender }}
+        {%- if char.aliases and char.aliases != "None" -%}
+            {{ ' | Aliases: ' + char.aliases }}
+        {%- endif -%}
+        {{ '\n' }}
+    {%- endfor -%}
+{%- endif -%}
+{{ '<<START>>\n' }}
+{%- for entry in entries -%}
+    {{ '<<JAPANESE>>\n' + entry.japanese + '\n<<ENGLISH>>\n' }}
+    {%- if not loop.last -%}
+        {{ entry.english + eos_token + '\n' }}
+    {%- endif -%}
+{%- endfor -%}

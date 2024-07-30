@@ -29,6 +29,7 @@ import re
 import random
 import statistics
 import sacrebleu
+import jinja2
 
 
 st_model = None
@@ -86,7 +87,6 @@ if __name__ == "__main__":
     SCORE_VERSION = 2
     MAX_ENTRIES_PER_BATCH = 10
     MAX_NEW_TOKENS = 120
-    MAX_BENCHMARK_OUTPUT = 128
 
     # # 'TLAssist-test-val.txt'
     # # 'TLAssist-validation-v4_SIMILARITY_NS.txt'
@@ -118,8 +118,8 @@ if __name__ == "__main__":
     parser.add_argument("--backend", type=str, choices=SUPPORTED_BACKENDS, help="model backend type")
     parser.add_argument("--context-size", type=int, help="model context size (default: 2048)", default=2048)
     parser.add_argument("--batch-size", type=int, help="model batch size (default: 1)", default=1)
-    parser.add_argument("--preset", type=str, help="model preset (default: default)")
-    #parser.add_argument("--format", type=str, help="model prompt format (default: alpaca)")
+    #parser.add_argument("--preset", type=str, help="model preset (default: default)")
+    parser.add_argument("--format", type=str, help="model prompt format (default: vntl)", default="vntl")
     parser.add_argument("--prefill", type=str, help="model response prefill, used only in chat endpoints")
     parser.add_argument("--eos-token", type=str, help="model eos token, used only in completion endpoints (default: </s>)", default="</s>")
     parser.add_argument("--stop-sequences", type=str, help="model stop sequences", default="[]")
@@ -135,6 +135,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--results-path", type=str, help="results directory path (default: ./results)", default="./results")
     parser.add_argument("--dataset-path", type=str, help="eval dataset path (default: ./TLAssist-validation-v4_SIMILARITY_NS.txt)", default="./TLAssist-validation-v4_SIMILARITY_NS.txt")
+    parser.add_argument("--samples", type=int, help="number of samples for evaluation (default: 128)", default=128)
+    parser.add_argument("--samples-fd", type=str, help="filter samples by fidelity (default: [\"absolute\"])", default="[\"absolute\"]")
 
     parser.add_argument("--shuffle", action="store_true", help="enable prompt shuffling")
 
@@ -179,7 +181,7 @@ if __name__ == "__main__":
                     pass
                 break
 
-    if len(processed_prompts) >= MAX_BENCHMARK_OUTPUT:
+    if len(processed_prompts) >= args.samples:
         print("Already finished.")
         exit(0)
 
@@ -191,6 +193,9 @@ if __name__ == "__main__":
 
     stop_sequences = json.loads(args.stop_sequences)
     assert isinstance(stop_sequences, list)
+
+    samples_fd = json.loads(args.samples_fd)
+    assert isinstance(samples_fd, list)
 
     if args.backend == "openai":
         model = OaiModel(args.host, args.api_key, args.model, args.context_size, extra_api_params, extra_api_headers)
@@ -227,6 +232,10 @@ if __name__ == "__main__":
                 obj = json.loads(line)
                 batch_api_output.append(obj["response"]["body"]["choices"][0]["message"]["content"])
 
+    # Set up Jinja2 environment
+    with open(f"./formats/{args.format}.j2", "r", encoding="utf-8") as f:
+        template = jinja2.Template(f.read())
+
     # Parse the characters file
     books = VisualNovels("characters.txt")
     books.read_file()
@@ -251,14 +260,8 @@ if __name__ == "__main__":
         last_entry = batch[-1]
         batch = [entry for entry in batch if entry.book_id == last_entry.book_id]
 
-        if "Mashiro" in args.dataset_path:
-            # For Mashiro dataset
-            if "absolute" in batch[-1].fidelity or "high" in batch[-1].fidelity:
-                continue
-        else:
-            # For SenrenBanka dataset
-            if "absolute" not in batch[-1].fidelity:
-                continue
+        if not any(fd in batch[-1].fidelity for fd in samples_fd):
+            continue
 
         # We want the LLM to have some completion examples.
         if idx < 5:
@@ -270,16 +273,15 @@ if __name__ == "__main__":
             metadata = None
             prompt = batch[-1].japanese.split("]: ", 1)[-1].split("】：", 1)[-1].split("】:", 1)[-1]
         else:
-            block = ""
+            # Find all unique speaking characters in this batch
+            speaking_characters = set()
             for entry in batch:
-                block += \
-                    f"<<JAPANESE>>\n" \
-                    f"{entry.japanese}\n" \
-                    f"<<ENGLISH>>\n" \
-                    f"{entry.english if entry != batch[-1] else ''}{args.eos_token if entry != batch[-1] else ''}\n"
-            block = block.strip() + "\n"
-            block = re.sub(r"【(.*?)】：", r"[\1]: ", block)
-            
+                speaking_names = set(re.findall(r'\[(.*?)\]', entry.japanese))
+                for name in speaking_names:
+                    _character = books.get_character(ID, name)
+                    if _character:
+                        speaking_characters.add(_character)
+
             def compile_metadata(characters):
                 metadata_chars = []
                 for character in characters:
@@ -290,19 +292,22 @@ if __name__ == "__main__":
 
                 metadata = ""
                 if metadata_chars:
-                    metadata += '<<METADATA>>\n' + '\n'.join(random.sample(metadata_chars, k=len(metadata_chars))) + "\n"
-                return metadata
+                    metadata += '\n'.join(metadata_chars) + "\n"
 
-            # Find all unique speaking characters in this block
-            speaking_characters: set[Character] = set()
-            speaking_names = set(re.findall(r'\[(.*?)\]', block))
-            for name in speaking_names:
-                _character = books.get_character(ID, name)
-                if _character:
-                    speaking_characters.add(_character)
+                return metadata.strip()
+
             metadata = compile_metadata(speaking_characters)
-            prompt = metadata + "<<START>>\n" + block
-        
+
+            # Render the template
+            prompt = template.render(
+                speaking_characters=speaking_characters,
+                entries=batch,
+                eos_token=args.eos_token
+            )
+
+            # Post-processing
+            prompt = re.sub(r"【(.*?)】：", r"[\1]: ", prompt)
+
         if skipping:
             if isinstance(model, TLServiceModel) or isinstance(model, SugoiModel):
                 skipping = processed_prompts[-1] != prompt
@@ -324,9 +329,9 @@ if __name__ == "__main__":
         random.Random(args.seed).shuffle(prompt_batches)
 
     count = len(processed_prompts)
-    pbar = tqdm(total=MAX_BENCHMARK_OUTPUT-len(processed_prompts))
+    pbar = tqdm(total=args.samples-len(processed_prompts))
     for batches, metadatas, prompts in zip(entry_batches, metadata_batches, prompt_batches):
-        if count >= MAX_BENCHMARK_OUTPUT:
+        if count >= args.samples:
             break
 
         if not args.batch_input_file and not args.batch_output_file:
@@ -347,11 +352,11 @@ if __name__ == "__main__":
                         # TODO: Add "Be mindful of idiomatic expressions or cultural references that may require more nuanced translation to convey the correct meaning."?
                         {"role": "user", "content": f"""All messages that I send from now on will contain Japanese. Reply with the translation and only the translation, taking the context of the previous messages into careful consideration.
 
-Additional Meta-data:
+Additional metadata:
 ```
 {metadatas[0]}
 ```"""},
-                        {"role": "assistant", "content": """I understand."""}
+                        {"role": "assistant", "content": "I understand."}
                     ]
                     for entry in batch:
                         messages.append({"role": "user", "content": entry.japanese})
@@ -381,11 +386,11 @@ Additional Meta-data:
                     # TODO: Add "Be mindful of idiomatic expressions or cultural references that may require more nuanced translation to convey the correct meaning."?
                     {"role": "user", "content": f"""All messages that I send from now on will contain Japanese. Reply with the translation and only the translation, taking the context of the previous messages into careful consideration.
 
-Additional Meta-data:
+Additional metadata:
 ```
 {metadatas[0]}
 ```"""},
-                    {"role": "assistant", "content": """I understand."""}
+                    {"role": "assistant", "content": "I understand."}
                 ]
                 for entry in batch:
                     messages.append({"role": "user", "content": entry.japanese})
@@ -410,7 +415,7 @@ Additional Meta-data:
         #print(repr(results))
 
         for idx, result in enumerate(results):
-            if count >= MAX_BENCHMARK_OUTPUT:
+            if count >= args.samples:
                 break
             
             prompt = prompts[idx]

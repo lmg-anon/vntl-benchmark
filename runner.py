@@ -23,8 +23,6 @@ downloaded_models = set()
 class Config:
     concurrent_downloads: int = 0
     model_cache_size: int = 0
-    results_path: str = ""
-    dataset_path: str = ""
     extra_args: str = ""
     verbose: bool = False
     clean: bool = False
@@ -71,6 +69,14 @@ class ModelParams:
     prefill: str = ""
     eos_token: str = ""
 
+@dataclass
+class Dataset:
+    name: str
+    results_path: str
+    dataset_path: str
+    samples: int
+    samples_fd: list[str]
+
 def find_program_path(program_name):
     """
     Find the path of a program in the system's PATH environment variable.
@@ -89,7 +95,7 @@ def get_run_command(run: RunParams | None, model: ModelParams, backend: BackendP
         command = f"\"{run.path}\" {run.arguments.format(model_path = backend.model, threads = model.thread_number, context_size = model.context_size, port = port)}"
     return command
 
-def run_python_script(title: str, model: ModelParams, backend: BackendParams, config: Config, extra_args: str):
+def run_python_script(title: str, model: ModelParams, backend: BackendParams, dataset: Dataset, extra_args: str):
     command = f"\"{sys.executable}\" main.py --y --title \"{title}\" --backend {backend.type} --context-size {model.context_size} --batch-size {model.batch_size}"
 
     if model.seed:
@@ -125,10 +131,11 @@ def run_python_script(title: str, model: ModelParams, backend: BackendParams, co
     elif backend.type in ["llamapy", "sugoi", "tlservice"]:
         command += f" --model {backend.model}"
 
-    if config.results_path:
-        command += f" --results-path \"{config.results_path}\""
-    if config.dataset_path:
-        command += f" --dataset-path \"{config.dataset_path}\""
+    command += f" --results-path \"{dataset.results_path}\""
+    command += f" --dataset-path \"{dataset.dataset_path}\""
+    command += f" --samples {dataset.samples}"
+    command += " --samples-fd \"%s\"" % json.dumps(dataset.samples_fd).replace('"', '\\"')
+    
     if extra_args:
         command += f" {extra_args}"
 
@@ -149,7 +156,7 @@ def exit_gracefully(signum, frame):
     kill_current_process()
     exit()
 
-def run_plan(config: Config):
+def run_plan(dataset: Dataset, config: Config):
     global current_process
 
     files = os.listdir("configs")
@@ -205,10 +212,10 @@ def run_plan(config: Config):
 
         clean = item.get("clean", config.clean)
         allow_resume = item.get("allow_resume", config.allow_resume)
-        if os.path.isfile(os.path.join(config.results_path, f"{title}.jsonl")):
+        if os.path.isfile(os.path.join(dataset.results_path, f"{title}.jsonl")):
             if clean:
                 try:
-                    os.remove(os.path.join(config.results_path, f"{title}.jsonl"))
+                    os.remove(os.path.join(dataset.results_path, f"{title}.jsonl"))
                 except:
                     pass
             elif not allow_resume:
@@ -258,7 +265,7 @@ def run_plan(config: Config):
             except:
                 pass
 
-        run_python_script(title, model, backend, config, extra_args)
+        run_python_script(title, model, backend, dataset, extra_args)
 
         if downloader is not None:
             downloaded_models.remove(downloader.output)
@@ -303,8 +310,11 @@ if __name__ == "__main__":
     parser.add_argument("--clean", action="store_true", help="enable clean run")
     parser.add_argument("--allow-resume", action="store_true", help="enable resume run")
 
-    parser.add_argument("--results-path", type=str, help="results path to run main script", default="")
-    parser.add_argument("--dataset-path", type=str, help="dataset path to run main script", default="")
+    parser.add_argument("--dataset", type=str, help="dataset name", required=True)
+    parser.add_argument("--results-path", type=str, help="results directory path", default="")
+    parser.add_argument("--dataset-path", type=str, help="dataset file path", default="")
+    parser.add_argument("--samples", type=int, help="number of samples for evaluation (default: 128)", default=128)
+    parser.add_argument("--samples-fd", type=str, help="filter samples by fidelity", default="")
 
     parser.add_argument("--extra-args", type=str, help="extra args to run main script", default="")
     parser.add_argument("--verbose", action="store_true", help="enable verbose output")
@@ -314,21 +324,32 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+    with open("datasets.yml", "r") as f:
+        datasets = [Dataset(**dataset) for dataset in yaml.safe_load(f)]
+
+    dataset = next((dataset for dataset in datasets if dataset.name == args.dataset), None)
+
+    if dataset is None:
+        print("Unknown dataset.")
+        exit(-1)
+
+    dataset.results_path = args.results_path if args.results_path else dataset.results_path
+    dataset.dataset_path = args.dataset_path if args.dataset_path else dataset.dataset_path
+    dataset.samples = args.samples if args.samples else dataset.samples
+    dataset.samples_fd = args.samples_fd if args.samples_fd else dataset.samples_fd
     
     with open("config.yml", "r") as f:
-        config = yaml.safe_load(f)
+        config = Config(**yaml.safe_load(f))
 
-    config = Config(**config)
-    config.results_path = args.results_path if not config.results_path else f"{config.results_path} {args.results_path}"
-    config.dataset_path = args.dataset_path if not config.dataset_path else f"{config.dataset_path} {args.dataset_path}"
     config.extra_args = args.extra_args if not config.extra_args else f"{config.extra_args} {args.extra_args}"
-    config.verbose = config.verbose if config.verbose else args.verbose
-    config.clean = config.clean if config.clean else args.clean
-    config.allow_resume = config.allow_resume if config.allow_resume else args.allow_resume
+    config.verbose = args.verbose if args.verbose else config.verbose
+    config.clean = args.clean if args.clean else config.clean
+    config.allow_resume = args.allow_resume if args.allow_resume else config.allow_resume
     config.model_name_regex = args.model if not config.model_name_regex else f"{config.model_name_regex}|{args.model}"
 
     download_thread = threading.Thread(target=download_models_concurrently, args=(config,))
     download_thread.daemon = True
     download_thread.start()
 
-    run_plan(config)
+    run_plan(dataset, config)
