@@ -25,10 +25,10 @@ This script evaluates the ability of Large Language Models (LLMs) to translate J
 
 6. Run the benchmark:
    ```
-   python runner.py --model org@model#quant
-   python runner.py --model org@model#quant --results-path ./results mashiro --dataset-path Mashiro_full.jsonl
+   python runner.py --model org@model#quant --dataset Senren
+   python runner.py --model org@model#quant --dataset Mashiro
    ```
 
-If everything went right, the results will be generated.
+If everything has gone right, the results will be generated.
 
 This script is still in development. A more comprehensive README will be provided soon™.
