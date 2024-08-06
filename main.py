@@ -49,24 +49,35 @@ def get_similarity_batched(texts1, texts2):
     cosine_scores = util.cos_sim(embeddings1, embeddings2)
     return cosine_scores.diag()
 
-def get_similarity(text1, text2):
-    text1 = text1.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
-    text2 = text2.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
-    if text1.lower() == text2.lower():
+def clean_text(text, stricter=False):
+    if stricter:
+        text = re.sub(r"([^a-zA-Z]|^)([a-zA-Z])(?i:-\2)+([a-zA-Z])", r"\1\2\3", text)
+    to_strip = "&っ。～―（）「」｢｣『』“”\"'，、○()«»~ \t\r\n"
+    if stricter:
+        to_strip += "….?？!！,"
+    text = text.strip(to_strip)
+    return text
+
+def get_similarity(ref, hyp):
+    ref = clean_text(ref, stricter=True)
+    if not ref:
         return 1.0
-    return float(get_similarity_batched([text1], [text2])[0])
+    hyp = clean_text(hyp, stricter=True)
+    if ref.lower() == hyp.lower():
+        return 1.0
+    return float(get_similarity_batched([ref], [hyp])[0])
 
 def get_bleu(ref, hyp):
-    ref = ref.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
-    hyp = hyp.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
+    ref = clean_text(ref)
+    hyp = clean_text(hyp)
     if ref.lower() == hyp.lower():
         return 100
     bleu = sacrebleu.sentence_bleu(hyp, [ref])
     return bleu.score
 
 def get_chrf(ref, hyp):
-    ref = ref.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
-    hyp = hyp.strip("っ。～…―（）「」｢｣『』“”„\"'`，、○.,()«»~ \t\r\n")
+    ref = clean_text(ref)
+    hyp = clean_text(hyp)
     if ref.lower() == hyp.lower():
         return 100
     chrf = sacrebleu.sentence_chrf(hyp, [ref])
