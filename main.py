@@ -51,10 +51,12 @@ def get_similarity_batched(texts1, texts2):
 
 def clean_text(text, stricter=False):
     if stricter:
-        text = re.sub(r"([^a-zA-Z]|^)([a-zA-Z])(?i:-\2)+([a-zA-Z])", r"\1\2\3", text)
-    to_strip = "&っ。～―（）「」｢｣『』“”\"'，、○()«»~ \t\r\n"
+        text = re.sub(r"([^a-zA-Z]|^)([a-zA-Z]{1,2})(?i:-\2)+([a-zA-Z])", r"\1\2\3", text)
+        text = re.sub(r"[~～♪]", "", text)
+        text = re.sub(r" +", " ", text)
+    to_strip = "&っ。～（）「」｢｣『』“”\"'，、○()«»~ \t\r\n"
     if stricter:
-        to_strip += "….?？!！,"
+        to_strip += "….?？!！,―-"
     text = text.strip(to_strip)
     return text
 
@@ -271,6 +273,8 @@ if __name__ == "__main__":
         last_entry = batch[-1]
         batch = [entry for entry in batch if entry.book_id == last_entry.book_id]
 
+        # TODO: Skip "len(clean_text(batch[-1].english, stricter=True)) <= 15"
+
         if not any(fd in batch[-1].fidelity for fd in samples_fd):
             continue
 
@@ -285,13 +289,17 @@ if __name__ == "__main__":
             prompt = batch[-1].japanese.split("]: ", 1)[-1].split("】：", 1)[-1].split("】:", 1)[-1]
         else:
             # Find all unique speaking characters in this batch
-            speaking_characters = set()
+            block = ""
             for entry in batch:
-                speaking_names = set(re.findall(r'\[(.*?)\]', entry.japanese))
-                for name in speaking_names:
-                    _character = books.get_character(ID, name)
-                    if _character:
-                        speaking_characters.add(_character)
+                block += f"{entry.japanese}\n{entry.english}"
+            block = re.sub(r"【(.*?)】：", r"[\1]: ", block)
+
+            speaking_characters = set()
+            speaking_names = set(re.findall(r'\[(.*?)\]', block))
+            for name in speaking_names:
+                _character = books.get_character(ID, name)
+                if _character:
+                    speaking_characters.add(_character)
 
             def compile_metadata(characters):
                 metadata_chars = []
