@@ -316,6 +316,7 @@ if __name__ == "__main__":
                 return metadata.strip()
 
             metadata = compile_metadata(speaking_characters)
+            assert not speaking_characters or metadata.strip()
 
             # Render the template
             prompt = template.render(

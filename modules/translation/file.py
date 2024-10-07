@@ -38,11 +38,11 @@ class TranslationFile:
                     continue
 
                 data = json.loads(line)
-                current_id = data.get('vn')
+                current_id = data.get('vn', data.get('file_idx'))
                 current_subidx = data.get('subidx')
                 current_japanese = data.get('japanese').replace("\n", "").replace("\r", "")
                 current_english = data.get('english').replace("\n", "").replace("\r", "")
-                accuracy = data.get('accuracy')
+                accuracy = data.get('accuracy', 1.0)
                 current_fidelity = self.get_fidelity_label(accuracy)
                 
                 entry = TranslationEntry(current_japanese, current_english, current_fidelity, current_id, current_subidx)

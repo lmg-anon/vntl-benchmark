@@ -3,9 +3,12 @@ from typing_extensions import override
 from modules.model import LanguageModel
 from modules.log import Logger
 from colorama import Fore
+import concurrent.futures
+from functools import partial
 import requests
 import json
 import time
+import sseclient
 
 __all__ = ("LcppModel",)
 
@@ -29,7 +32,7 @@ class LcppModel(LanguageModel):
         wait_started = False
         while True:
             try:
-                response = requests.get(f"{self.lcpp_host}/")
+                requests.get(f"{self.lcpp_host}/")
                 break
             except Exception as e:
                 if not wait_started:
@@ -55,52 +58,78 @@ class LcppModel(LanguageModel):
         rename_dict_key("stop_sequence", "stop")
         if "stop" not in data:
             data["stop"] = []
-        # TODO: Stream support.
-        if "stream" in data:
-            del data["stream"]
         data["n_keep"] = -1
         return data
-
+    
     @override
     def _generate_token(self, data: dict) -> Iterator[str]:
         data = self._convert_data(data)
-        response_text = str()
-
+        headers = {
+            'Content-Type': 'application/json',
+            #'Authorization': f'Bearer {self.api_key}'
+        }
+        
         for _ in range(5):
-            if response_text:
-                break
-
             try:
-                response = requests.post(f"{self.lcpp_host}/completion", data=json.dumps(data), headers={'Content-Type': 'application/json'})
+                response = requests.post(f"{self.lcpp_host}/completion", data=json.dumps(data), stream=True, headers=headers)
+                client = sseclient.SSEClient(response)  # type: ignore
             except Exception as e:
                 Logger.log_event("Error", Fore.RED, f"{self.get_identifier()} is offline.")
                 Logger.log(str(e), True)
                 exit(-1)
 
-            if response.status_code == 503 or response.status_code == 400: # Server busy.
-                Logger.log(f"{self.get_identifier()} is busy, trying again in ten seconds...", True)
-                time.sleep(10)
+            if response.status_code == 503: # Server busy.
+                Logger.log(f"{self.get_identifier()} is busy, trying again in 3 seconds...", True)
+                time.sleep(3)
                 continue
 
             if response.status_code != 200:
-                Logger.log_event("Error", Fore.RED, f"{self.get_identifier()} returned an error. HTTP status code: {response.status_code}")
+                Logger.log_event("Error", Fore.RED, f"{self.get_identifier()} returned an error. HTTP status code: {response.status_code}\n{response.text}")
                 exit(-1)
 
+            lastEvent = None
             try:
-                response_dict = response.json()
-                response_text = response_dict["content"]
-                if not response_text and response_dict["stopped_eos"]:
-                    return ""
-            except Exception as e:
-                Logger.log_event("Warning", Fore.YELLOW, f"{self.get_identifier()} returned an invalid response. Error while parsing: {e}", True)
-                continue
+                for event in client.events():
+                    if event.event == "message":
+                        lastEvent = jsonText = event.data
+                        if jsonText == "[DONE]":
+                            break
+                        jsonData = json.loads(jsonText)
 
-        return response_text
+                        if jsonData['stop']:
+                            if jsonData['content']:
+                                yield jsonData['content']
+                            break
+
+                        #print(jsonData['id_slot'], jsonData['content'])
+                        yield jsonData['content']
+                        lastEvent = None
+                break
+            except Exception as e:
+                Logger.log_event("Warning", Fore.YELLOW, f"{self.get_identifier()} returned an invalid response. Error while parsing {repr(lastEvent)}: {e}", True)
+                continue
     
     @override
     def _generate_token_chat(self, data: dict) -> Iterator[str]:
         raise NotImplementedError()
     
+    def supports_batching(self) -> bool:
+        return True
+    
     @override
     def generate_batch(self, prompts: list[str], max_tokens: int = 8, stop_sequences: list[str] = []) -> list[str]:
-        raise NotImplementedError()
+        def gen_prompt(prompt: str, idx: int) -> tuple[str, int]:
+            return self.generate(prompt, max_tokens, stop_sequences), idx
+        
+        results = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(prompts)) as executor:
+            process_func = partial(gen_prompt)
+            future_to_idx = {executor.submit(process_func, prompt, idx): idx 
+                            for idx, prompt in enumerate(prompts)}
+            
+            for future in concurrent.futures.as_completed(future_to_idx):
+                result, idx = future.result()
+                results.append((idx, result))
+
+        results.sort(key=lambda x: x[0])
+        return [prompt for _, prompt in results]

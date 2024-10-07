@@ -117,6 +117,8 @@ class OaiModel(LanguageModel):
 
                         finishReason = jsonData['choices'][0]['finish_reason']
                         if finishReason is not None and finishReason != 'null':
+                            if finishReason not in ["stop"]:
+                                Logger.log(f"Generation finish_reason: {finishReason}", True)
                             if jsonData['choices'][0]['text']:
                                 yield jsonData['choices'][0]['text']
                             break
@@ -178,6 +180,10 @@ class OaiModel(LanguageModel):
 
                         finishReason = jsonData['choices'][0]['finish_reason']
                         if finishReason is not None and finishReason != 'null':
+                            if finishReason not in ["stop"]:
+                                Logger.log(f"Generation finish_reason: {finishReason}", True)
+                            if jsonData['choices'][0]['delta']['content']:
+                                yield jsonData['choices'][0]['delta']['content']
                             break
 
                         #logprobs = jsonData['choices'][0].get('logprobs', {}).get('top_logprobs', [{}])[0].items() if 'logprobs' in jsonData['choices'][0] else []

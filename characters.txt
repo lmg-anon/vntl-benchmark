@@ -260,7 +260,7 @@ Name: Souma Ria (僧間 理亜)
 Gender: Female
 Aliases: None
 
-Name: Sylvia le Cruzcrown Sortilège Sisua (シルヴィア・ル・クルスクラウン・ソルティレージュ・シスア)
+Name: Sylvia le Cruzcrown (シルヴィア・ル・クルスクラウン)
 Gender: Female
 Aliases: Sylvie (シルヴィ), Syl (シル)
 
@@ -270,7 +270,7 @@ Aliases: None
 
 Name: Mina (ミナ)
 Gender: Female
-Aliases: Cami-meow (カミにゃん), Caminal le Pultaia Sortilège Sisua (カミナル・ル・プルテア・ソルティレージュ・シスア)
+Aliases: Cami-meow (カミにゃん), Caminal le Pultaia (カミナル・ル・プルテア)
 
 Name: Exna Yeatz (エキスナ・イェーズ)
 Gender: Female
